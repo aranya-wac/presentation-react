@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>WAC Deck Studio — Promo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --paper:#FFFFFF; --paper-2:#FAFAFA; --surface-2:#F6F6F6;
+    --ink-strong:#0A0907; --ink:#1A1A1A; --ink-soft:#555555;
+    --ink-muted:#888888; --ink-faint:#BFBFBF;
+    --line:rgba(0,0,0,0.08); --line-strong:rgba(0,0,0,0.14);
+  }
+  html, body {
+    width: 1920px; height: 1080px; overflow: hidden;
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--paper); color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: 'cv11','ss01','ss03','liga';
+  }
+
+  .scene {
+    position: absolute; inset: 0;
+    width: 1920px; height: 1080px;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    background: var(--paper);
+    opacity: 0;
+    transition: opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .scene.active { opacity: 1; }
+
+  .eyebrow {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 13px; letter-spacing: 0.18em;
+    text-transform: uppercase; font-weight: 500;
+    color: var(--ink-muted);
+  }
+
+  /* ── SCENE 1 — HOOK ───────────────────────────── */
+  .scene-hook .content { text-align: center; max-width: 1500px; padding: 0 80px; }
+  .scene-hook .eyebrow {
+    opacity: 0; transform: translateY(10px);
+  }
+  .scene-hook.play .eyebrow { animation: fadeUp 0.9s var(--out, cubic-bezier(0.22,1,0.36,1)) 0.2s forwards; }
+  .scene-hook h1 {
+    font-size: 132px; font-weight: 600; line-height: 1.02;
+    letter-spacing: -0.045em; margin-top: 36px;
+    color: var(--ink-strong);
+    opacity: 0; transform: translateY(20px);
+  }
+  .scene-hook.play h1 { animation: fadeUp 1.1s cubic-bezier(0.22,1,0.36,1) 0.55s forwards; }
+  .scene-hook em {
+    font-style: italic; font-weight: 500; color: var(--ink-soft);
+  }
+
+  /* ── SCENE 2 — APP INTRO ───────────────────────── */
+  .scene-intro .content { text-align: center; }
+  .scene-intro .mark {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 88px; height: 88px; border-radius: 22px;
+    background: var(--ink-strong); color: #fff;
+    font-size: 38px; font-weight: 700; letter-spacing: -0.02em;
+    margin-bottom: 44px;
+    opacity: 0; transform: scale(0.85);
+  }
+  .scene-intro.play .mark { animation: popIn 0.8s cubic-bezier(0.22,1,0.36,1) 0.1s forwards; }
+  .scene-intro h1 {
+    font-size: 168px; font-weight: 600; letter-spacing: -0.045em; line-height: 1;
+    color: var(--ink-strong);
+    opacity: 0; transform: scale(0.96);
+  }
+  .scene-intro.play h1 { animation: zoomFade 1.2s cubic-bezier(0.22,1,0.36,1) 0.35s forwards; }
+  .scene-intro p {
+    font-size: 30px; color: var(--ink-soft); margin-top: 28px; font-weight: 400;
+    letter-spacing: -0.01em;
+    opacity: 0;
+  }
+  .scene-intro.play p { animation: fadeUp 0.9s cubic-bezier(0.22,1,0.36,1) 0.85s forwards; }
+
+  /* ── SCENE 3 — DASHBOARD SHOWCASE ──────────────── */
+  .scene-dash { flex-direction: column; background: var(--paper-2); }
+  .scene-dash .header {
+    position: absolute; top: 90px; left: 50%; transform: translateX(-50%);
+    text-align: center;
+    opacity: 0;
+  }
+  .scene-dash.play .header { animation: fadeDown 0.9s cubic-bezier(0.22,1,0.36,1) 0.2s forwards; }
+  .scene-dash .header h2 {
+    font-size: 52px; font-weight: 600; margin-top: 16px;
+    letter-spacing: -0.035em; color: var(--ink-strong);
+  }
+  .scene-dash .frame {
+    width: 1560px; height: 820px; margin-top: 70px;
+    border-radius: 20px; overflow: hidden;
+    background: #fff;
+    box-shadow:
+      0 2px 4px rgba(15,14,12,0.06),
+      0 28px 80px -12px rgba(15,14,12,0.22),
+      0 0 0 1px var(--line);
+    opacity: 0; transform: scale(1.04);
+  }
+  .scene-dash.play .frame { animation: zoomPan 5s cubic-bezier(0.22,1,0.36,1) 0.35s forwards; }
+  .scene-dash .frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  /* ── FEATURE SCENES ────────────────────────────── */
+  .feature-scene { display: flex; padding: 0 130px; gap: 90px; }
+  .feature-scene.flip { flex-direction: row-reverse; }
+  .feature-scene .text-col {
+    flex: 0.85; max-width: 540px;
+    align-self: center;
+    opacity: 0; transform: translateX(-30px);
+  }
+  .feature-scene.play .text-col { animation: slideInLeft 0.9s cubic-bezier(0.22,1,0.36,1) 0.2s forwards; }
+  .feature-scene.flip .text-col { transform: translateX(30px); }
+  .feature-scene.flip.play .text-col { animation: slideInRightText 0.9s cubic-bezier(0.22,1,0.36,1) 0.2s forwards; }
+
+  .feature-scene .text-col h2 {
+    font-size: 76px; font-weight: 600; line-height: 1.05;
+    margin-top: 22px; letter-spacing: -0.04em;
+    color: var(--ink-strong);
+  }
+  .feature-scene .text-col p {
+    font-size: 24px; color: var(--ink-soft); line-height: 1.5;
+    margin-top: 24px; font-weight: 400; letter-spacing: -0.01em;
+  }
+  .feature-scene .img-col {
+    flex: 1.25; height: 720px;
+    align-self: center;
+    border-radius: 18px; overflow: hidden;
+    background: #fff;
+    box-shadow:
+      0 2px 4px rgba(15,14,12,0.06),
+      0 24px 60px -12px rgba(15,14,12,0.18),
+      0 0 0 1px var(--line);
+    opacity: 0; transform: translateX(40px);
+  }
+  .feature-scene.play .img-col { animation: slideInRight 1s cubic-bezier(0.22,1,0.36,1) 0.3s forwards; }
+  .feature-scene.flip .img-col { transform: translateX(-40px); }
+  .feature-scene.flip.play .img-col { animation: slideInLeftImg 1s cubic-bezier(0.22,1,0.36,1) 0.3s forwards; }
+  .feature-scene .img-col img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  /* ── BENEFITS ──────────────────────────────────── */
+  .scene-benefits { flex-direction: column; gap: 24px; background: var(--paper-2); }
+  .scene-benefits .eyebrow { opacity: 0; }
+  .scene-benefits.play .eyebrow { animation: fadeUp 0.7s cubic-bezier(0.22,1,0.36,1) 0.1s forwards; }
+  .scene-benefits .lede {
+    font-size: 36px; font-weight: 500; color: var(--ink-soft);
+    margin-bottom: 28px; letter-spacing: -0.02em;
+    opacity: 0;
+  }
+  .scene-benefits.play .lede { animation: fadeUp 0.8s cubic-bezier(0.22,1,0.36,1) 0.25s forwards; }
+  .scene-benefits .row { display: flex; gap: 56px; align-items: center; }
+  .scene-benefits .b {
+    font-size: 64px; font-weight: 600; letter-spacing: -0.04em;
+    color: var(--ink-strong);
+    opacity: 0; transform: translateY(16px);
+  }
+  .scene-benefits.play .b1 { animation: fadeUp 0.7s cubic-bezier(0.22,1,0.36,1) 0.45s forwards; }
+  .scene-benefits.play .b2 { animation: fadeUp 0.7s cubic-bezier(0.22,1,0.36,1) 0.7s forwards; }
+  .scene-benefits.play .b3 { animation: fadeUp 0.7s cubic-bezier(0.22,1,0.36,1) 0.95s forwards; }
+  .scene-benefits .dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--ink-faint);
+    opacity: 0;
+  }
+  .scene-benefits.play .dot { animation: fadeIn 0.5s ease-out 1.15s forwards; }
+
+  /* ── CTA ───────────────────────────────────────── */
+  .scene-cta .content { text-align: center; }
+  .scene-cta h1 {
+    font-size: 184px; font-weight: 600; letter-spacing: -0.05em; line-height: 1;
+    color: var(--ink-strong);
+    opacity: 0; transform: scale(0.94);
+  }
+  .scene-cta.play h1 { animation: zoomFade 1.1s cubic-bezier(0.22,1,0.36,1) 0.1s forwards; }
+  .scene-cta em {
+    font-style: italic; font-weight: 500; color: var(--ink-soft);
+  }
+  .scene-cta .button {
+    display: inline-flex; align-items: center; gap: 12px;
+    margin-top: 60px; padding: 22px 56px;
+    background: var(--ink-strong); color: #fff;
+    font-size: 22px; font-weight: 500; border-radius: 999px;
+    letter-spacing: -0.005em;
+    box-shadow: 0 12px 32px -8px rgba(15,14,12,0.25);
+    opacity: 0; transform: translateY(16px);
+  }
+  .scene-cta.play .button { animation: fadeUp 0.8s cubic-bezier(0.22,1,0.36,1) 0.7s forwards; }
+  .scene-cta .button .arrow {
+    display: inline-block; transition: transform 0.3s;
+  }
+  .scene-cta .url {
+    margin-top: 44px;
+    opacity: 0;
+  }
+  .scene-cta.play .url { animation: fadeUp 0.8s cubic-bezier(0.22,1,0.36,1) 1s forwards; }
+
+  /* ── KEYFRAMES ─────────────────────────────────── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translate(-50%, -16px); }
+    to   { opacity: 1; transform: translate(-50%, 0); }
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes popIn {
+    0%   { opacity: 0; transform: scale(0.85); }
+    60%  { opacity: 1; transform: scale(1.05); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  @keyframes zoomFade {
+    from { opacity: 0; transform: scale(0.96); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+  @keyframes zoomPan {
+    0%   { opacity: 0; transform: scale(1.06); }
+    20%  { opacity: 1; }
+    100% { opacity: 1; transform: scale(1.0) translateX(-24px); }
+  }
+  @keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-30px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes slideInRight {
+    from { opacity: 0; transform: translateX(40px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes slideInRightText {
+    from { opacity: 0; transform: translateX(30px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+  @keyframes slideInLeftImg {
+    from { opacity: 0; transform: translateX(-40px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+</style>
+</head>
+<body>
+
+<!-- 1. HOOK (0–3s) -->
+<section class="scene scene-hook" data-start="0" data-duration="3">
+  <div class="content">
+    <div class="eyebrow">For modern creators</div>
+    <h1>Building decks<br>shouldn't take <em>all day.</em></h1>
+  </div>
+</section>
+
+<!-- 2. APP INTRO (3–7s) -->
+<section class="scene scene-intro" data-start="3" data-duration="4">
+  <div class="content">
+    <div class="mark">W</div>
+    <h1>WAC Deck Studio</h1>
+    <p>AI-powered presentations, designed in seconds.</p>
+  </div>
+</section>
+
+<!-- 3. DASHBOARD SHOWCASE (7–12s) -->
+<section class="scene scene-dash" data-start="7" data-duration="5">
+  <div class="header">
+    <div class="eyebrow">Dashboard</div>
+    <h2>Your entire workspace, in one view.</h2>
+  </div>
+  <div class="frame"><img src="./promotion1.png" alt="Dashboard"></div>
+</section>
+
+<!-- 4. FEATURE 1 (12–14.5s) -->
+<section class="scene feature-scene" data-start="12" data-duration="2.5">
+  <div class="text-col">
+    <div class="eyebrow">Feature 01</div>
+    <h2>AI that drafts your deck.</h2>
+    <p>Drop in a brief — get a polished, branded presentation in seconds.</p>
+  </div>
+  <div class="img-col"><img src="./promotion2.png" alt="Feature 1"></div>
+</section>
+
+<!-- 5. FEATURE 2 (14.5–17s) -->
+<section class="scene feature-scene flip" data-start="14.5" data-duration="2.5">
+  <div class="text-col">
+    <div class="eyebrow">Feature 02</div>
+    <h2>Refined by design.</h2>
+    <p>Editorial typography and balanced layouts on every single slide.</p>
+  </div>
+  <div class="img-col"><img src="./promotion3.png" alt="Feature 2"></div>
+</section>
+
+<!-- 6. FEATURE 3 (17–19.5s) -->
+<section class="scene feature-scene" data-start="17" data-duration="2.5">
+  <div class="text-col">
+    <div class="eyebrow">Feature 03</div>
+    <h2>Live editing, zero friction.</h2>
+    <p>Tweak content, swap images, restructure slides — without breaking the design.</p>
+  </div>
+  <div class="img-col"><img src="./promotion4.png" alt="Feature 3"></div>
+</section>
+
+<!-- 7. FEATURE 4 (19.5–22s) -->
+<section class="scene feature-scene flip" data-start="19.5" data-duration="2.5">
+  <div class="text-col">
+    <div class="eyebrow">Feature 04</div>
+    <h2>Templates that travel.</h2>
+    <p>Start from a curated library — or save your own and reuse anywhere.</p>
+  </div>
+  <div class="img-col"><img src="./promotion5.png" alt="Feature 4"></div>
+</section>
+
+<!-- 8. FEATURE 5 (22–24s) -->
+<section class="scene feature-scene" data-start="22" data-duration="2">
+  <div class="text-col">
+    <div class="eyebrow">Feature 05</div>
+    <h2>Export anywhere.</h2>
+    <p>PDF, PPTX, web — every format your team uses.</p>
+  </div>
+  <div class="img-col"><img src="./promotion6.png" alt="Feature 5"></div>
+</section>
+
+<!-- 9. BENEFITS (24–26.5s) -->
+<section class="scene scene-benefits" data-start="24" data-duration="2.5">
+  <div class="eyebrow">Why teams switch</div>
+  <div class="lede">Faster. Cleaner. Effortless.</div>
+  <div class="row">
+    <div class="b b1">10× faster</div>
+    <div class="dot"></div>
+    <div class="b b2">Editorial by default</div>
+    <div class="dot"></div>
+    <div class="b b3">Built for scale</div>
+  </div>
+</section>
+
+<!-- 10. CTA (26.5–29s) -->
+<section class="scene scene-cta" data-start="26.5" data-duration="2.5">
+  <div class="content">
+    <h1>Try it <em>now.</em></h1>
+    <a class="button">Get started free <span class="arrow">→</span></a>
+    <div class="eyebrow url">wacdeckstudio.app</div>
+  </div>
+</section>
+
+<script>
+  // Browser preview: drives scenes sequentially using each <section>'s
+  // data-start / data-duration. HyperFrames will use these attributes
+  // directly when rendering — this script only affects in-browser playback.
+  (function () {
+    const scenes = Array.from(document.querySelectorAll('.scene'));
+    if (!scenes.length) return;
+
+    const total = scenes.reduce((max, el) => {
+      const s = parseFloat(el.dataset.start || '0');
+      const d = parseFloat(el.dataset.duration || '0');
+      return Math.max(max, s + d);
+    }, 0);
+
+    let active = null;
+    const startAt = performance.now();
+
+    function tick(now) {
+      const t = ((now - startAt) / 1000) % total;
+      const current = scenes.find(el => {
+        const s = parseFloat(el.dataset.start);
+        const d = parseFloat(el.dataset.duration);
+        return t >= s && t < s + d;
+      });
+      if (current && current !== active) {
+        scenes.forEach(s => { s.classList.remove('active'); s.classList.remove('play'); });
+        current.classList.add('active');
+        // restart animations
+        void current.offsetWidth;
+        current.classList.add('play');
+        active = current;
+      }
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  })();
+</script>
+
+</body>
+</html>

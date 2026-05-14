@@ -1,0 +1,158 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  /* Surfaces — pure white system */
+  --paper:    #FFFFFF;
+  --paper-2:  #FAFAFA;
+  --surface:  #FFFFFF;
+  --surface-2:#F6F6F6;
+
+  /* Ink — black-only hierarchy */
+  --ink-strong: #0A0907;
+  --ink:        #1A1A1A;
+  --ink-soft:   #555555;
+  --ink-muted:  #888888;
+  --ink-faint:  #BFBFBF;
+  --line:       rgba(0, 0, 0, 0.08);
+  --line-strong:rgba(0, 0, 0, 0.14);
+
+  /* Accent — kept as a token but resolves to black so existing call-sites
+     stay valid; tweak only if you want a colored highlight later. */
+  --accent: #000000;
+  --accent-soft: #F2F2F2;
+}
+
+html, body {
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'cv11', 'ss01', 'ss03', 'liga';
+}
+
+/* ── Display heading ─────────────────────────────────────────────────────── */
+.font-display {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  font-feature-settings: 'cv11', 'ss01', 'ss03';
+}
+
+/* Legacy class shims so existing markup keeps working */
+.font-serif {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: -0.035em;
+  font-feature-settings: 'cv11', 'ss01', 'ss03';
+}
+.font-serif-italic {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-style: italic;
+  font-weight: 500;
+  letter-spacing: -0.04em;
+  font-feature-settings: 'cv11', 'ss01', 'ss03';
+}
+
+/* Eyebrow — small uppercase mono label */
+.eyebrow {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--ink-muted);
+}
+
+/* ── Subtle scrollbars ────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.22);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ── Focus ring ───────────────────────────────────────────────────────────── */
+:where(button, a, input, textarea, [role="button"]):focus-visible {
+  outline: 2px solid var(--ink-strong);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* ── Skeleton shimmer ─────────────────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg,
+    rgba(0,0,0,0.05) 0%,
+    rgba(0,0,0,0.10) 50%,
+    rgba(0,0,0,0.05) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+/* ── Buttons ──────────────────────────────────────────────────────────────── */
+.btn-primary {
+  background: #000;
+  color: #fff;
+  border-radius: 999px;
+  padding: 0 18px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+  transition: all 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.btn-primary:hover { background: #1F1F1F; }
+.btn-primary:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.btn-secondary {
+  background: #fff;
+  color: #000;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0 18px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+  transition: all 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.btn-secondary:hover {
+  background: var(--surface-2);
+  border-color: var(--line-strong);
+}
+.btn-secondary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-lg { height: 48px; padding: 0 24px; font-size: 14px; }
+.btn-sm { height: 32px; padding: 0 14px; font-size: 12.5px; }
