@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { authApi } from '../api/client'
+import { authApi, formatApiError } from '../api/client'
 import { useAuthStore } from '../store/authStore'
 import { useToast } from '../components/ui/Toast'
 import { Eye, EyeOff, ArrowRight } from 'lucide-react'
@@ -39,7 +39,7 @@ export function RegisterPage() {
       })
       navigate('/dashboard', { replace: true })
     } catch (err: any) {
-      const msg = err.response?.data?.detail ?? 'Registration failed'
+      const msg = formatApiError(err, 'Registration failed')
       setError(msg)
       toast.update(toastId, {
         variant: 'error',

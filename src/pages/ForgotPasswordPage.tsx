@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { authApi } from '../api/client'
+import { authApi, formatApiError } from '../api/client'
 import { useToast } from '../components/ui/Toast'
 import { ArrowRight } from 'lucide-react'
 
@@ -25,7 +25,7 @@ export function ForgotPasswordPage() {
       if (match) setDevToken(match[1])
       toast.success('Check your inbox', 'If that email exists, a reset link is on its way.')
     } catch (err: any) {
-      const msg = err.response?.data?.detail ?? 'Could not send reset link'
+      const msg = formatApiError(err, 'Could not send reset link')
       toast.error('Something went wrong', msg)
     } finally {
       setLoading(false)

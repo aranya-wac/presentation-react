@@ -2,6 +2,22 @@ import axios from 'axios'
 
 export const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
+// FastAPI returns validation errors as `detail: [{loc, msg, type, ...}]` and
+// business errors as `detail: "string"`. Rendering the array directly inside
+// JSX throws React error #31 ("Objects are not valid as a React child") and
+// blanks the page, so normalise to a string here.
+export function formatApiError(err: unknown, fallback: string): string {
+  const detail = (err as any)?.response?.data?.detail
+  if (typeof detail === 'string') return detail
+  if (Array.isArray(detail)) {
+    return detail.map((e: any) => e?.msg || 'Invalid field').join('; ') || fallback
+  }
+  if (detail && typeof detail === 'object' && typeof detail.msg === 'string') {
+    return detail.msg
+  }
+  return (err as any)?.message || fallback
+}
+
 export const api = axios.create({
   baseURL: `${BASE_URL}/api/v1`,
   timeout: 120000, // 2 min — generation can take 10-30s

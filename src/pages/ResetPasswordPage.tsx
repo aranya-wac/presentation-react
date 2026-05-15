@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { authApi } from '../api/client'
+import { authApi, formatApiError } from '../api/client'
 import { useToast } from '../components/ui/Toast'
 import { ArrowRight, Eye, EyeOff } from 'lucide-react'
 
@@ -36,7 +36,7 @@ export function ResetPasswordPage() {
       await new Promise((r) => setTimeout(r, 600))
       navigate('/login')
     } catch (err: any) {
-      const msg = err.response?.data?.detail ?? 'Could not reset password'
+      const msg = formatApiError(err, 'Could not reset password')
       setError(msg)
       toast.error('Reset failed', msg)
     } finally {
