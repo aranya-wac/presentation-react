@@ -6,7 +6,7 @@ import { SlidePreview } from '../components/Presentation/SlidePreview'
 import { Button } from '../components/ui/Button'
 import { Chip } from '../components/ui/Chip'
 import type { PreviewResponse, Slide, TemplateListItem, Theme } from '../types'
-import { Loader2, Sparkles, X, Copy, Search, FileText, ArrowUpRight, Plus } from 'lucide-react'
+import { Loader2, Sparkles, X, Copy, Search, FileText, ArrowUpRight, Plus, Trash2 } from 'lucide-react'
 
 const SLIDE_W = 1280
 const SLIDE_H = 720
@@ -363,6 +363,25 @@ export function TemplatesPage() {
     }
   }
 
+  const handleDelete = async (t: TemplateListItem) => {
+    if (!confirm(`Delete "${t.name}"? This can't be undone.`)) return
+    // Optimistic remove — drop locally first, restore on failure so the user
+    // never stares at a 1.5s spinner for a routine action.
+    setTemplates((prev) => prev.filter((x) => x.id !== t.id))
+    try {
+      await templatesApi.delete(t.id)
+    } catch (err: any) {
+      // Reinsert at original position so the order is preserved.
+      setTemplates((prev) => {
+        const next = [...prev]
+        // Best-effort: append if we can't reconstruct the original index.
+        next.push(t)
+        return next
+      })
+      alert(err?.response?.data?.detail ?? 'Could not delete the template.')
+    }
+  }
+
   const categories = useMemo(() => {
     const set = new Set<string>()
     templates.forEach((t) => t.category && set.add(t.category))
@@ -504,6 +523,9 @@ export function TemplatesPage() {
                 template={t}
                 onView={() => setPreviewing(t)}
                 onCreate={() => openTemplate(t)}
+                // Only user-owned templates are deletable. Built-ins (is_system)
+                // are shared across the workspace and never user-removable.
+                onDelete={!(t as any).is_system ? () => handleDelete(t) : undefined}
               />
             ))}
           </div>
@@ -525,10 +547,13 @@ function TemplateCard({
   template,
   onView,
   onCreate,
+  onDelete,
 }: {
   template: TemplateListItem
   onView: () => void
   onCreate: () => void
+  /** Optional — only user-owned templates get the delete control. */
+  onDelete?: () => void
 }) {
   return (
     <div className="group">
@@ -556,6 +581,33 @@ function TemplateCard({
           previewSlide={template.preview_slide ?? null}
           theme={template.theme ?? null}
         />
+
+        {/* Delete (hover-revealed, top-right). Built-in templates never
+            get this control — see TemplatesPage's guard on is_system. */}
+        {onDelete && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete() }}
+            title="Delete template"
+            aria-label="Delete template"
+            className="absolute top-3 right-3 w-8 h-8 rounded-full items-center justify-center transition-all flex opacity-0 group-hover:opacity-100"
+            style={{
+              background: 'rgba(255,255,255,0.92)',
+              color: 'var(--ink-strong)',
+              backdropFilter: 'blur(8px)',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'rgba(220,38,38,0.95)'
+              ;(e.currentTarget as HTMLButtonElement).style.color = '#fff'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.92)'
+              ;(e.currentTarget as HTMLButtonElement).style.color = 'var(--ink-strong)'
+            }}
+          >
+            <Trash2 size={13} />
+          </button>
+        )}
 
         {/* Hover actions */}
         <div className="absolute inset-x-0 bottom-0 p-3 flex items-center gap-2 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 ease-out">

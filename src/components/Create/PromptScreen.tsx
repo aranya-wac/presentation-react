@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Paperclip, Sparkles, X, Loader2, ArrowLeft, Mic, Square, Link2 } from 'lucide-react'
-import { THEME_PRESETS, type ThemePreset } from '../../data/themes'
+import { ThemePicker } from './ThemePicker'
 
 export type DeckLevel = 'simple' | 'advanced'
 
@@ -526,51 +526,13 @@ export function PromptScreen({ onGenerate, isGenerating, defaultPrompt }: Props)
               </div>
             )}
 
-            {/* Theme chip selector — quick visual identity picker */}
-            <div
-              className="flex items-center gap-2 px-5 py-2.5 overflow-x-auto"
-              style={{ borderTop: '1px solid var(--line)', background: 'var(--surface)' }}
-            >
-              <span className="eyebrow flex-shrink-0">Theme</span>
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {THEME_PRESETS.map((t: ThemePreset) => {
-                  const active = themePresetId === t.id
-                  return (
-                    <button
-                      key={t.id}
-                      onClick={() => setThemePresetId(t.id)}
-                      disabled={isGenerating}
-                      title={t.name}
-                      className="flex items-center gap-1.5 h-7 px-2 rounded-full transition-all"
-                      style={{
-                        background: active ? 'var(--ink-strong)' : 'transparent',
-                        color: active ? '#fff' : 'var(--ink-soft)',
-                        border: `1px solid ${active ? 'var(--ink-strong)' : 'var(--line)'}`,
-                      }}
-                    >
-                      {/* mini palette swatch */}
-                      <span
-                        style={{
-                          width: 12, height: 12, borderRadius: 3,
-                          background: t.colors.background,
-                          border: `1px solid ${t.colors.heading}33`,
-                          display: 'inline-block',
-                          position: 'relative',
-                          overflow: 'hidden',
-                          flexShrink: 0,
-                        }}
-                      >
-                        <span style={{
-                          position: 'absolute', right: 0, top: 0, bottom: 0, width: 5,
-                          background: t.colors.accent,
-                        }} />
-                      </span>
-                      <span className="text-[11px] font-semibold whitespace-nowrap">{t.name}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
+            {/* Theme picker — premium chip browser with hover preview + AI suggestions */}
+            <ThemePicker
+              selectedId={themePresetId}
+              onSelect={setThemePresetId}
+              prompt={prompt}
+              disabled={isGenerating}
+            />
 
             {/* Toolbar */}
             <div

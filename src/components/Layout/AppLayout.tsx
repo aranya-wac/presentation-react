@@ -18,6 +18,7 @@ import { useAuthStore } from '../../store/authStore'
 import { useToast } from '../ui/Toast'
 import { usageApi, type UsageInfo } from '../../api/client'
 import { KeyboardShortcutsModal } from './KeyboardShortcutsModal'
+import { ThemeToggle } from './ThemeToggle'
 
 // ── Sidebar ──────────────────────────────────────────────────────────────────
 function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
@@ -95,13 +96,13 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
     return (
       <aside
         className="w-[60px] flex-shrink-0 flex flex-col items-center py-4 gap-0.5"
-        style={{ background: '#F7F7F6', borderRight: '1px solid var(--line)' }}
+        style={{ background: 'var(--surface-2)', borderRight: '1px solid var(--line)' }}
       >
         {/* Logo mark */}
         <button
           onClick={onToggle}
           className="w-8 h-8 rounded-lg flex items-center justify-center mb-3 transition-opacity hover:opacity-80"
-          style={{ background: 'var(--ink-strong)', color: '#fff' }}
+          style={{ background: 'var(--ink-strong)', color: 'var(--paper)' }}
         >
           <span className="text-[8px] font-bold tracking-tight">WAC</span>
         </button>
@@ -129,7 +130,7 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
               className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
               style={{
                 background: active ? 'var(--ink-strong)' : 'transparent',
-                color: active ? '#fff' : 'var(--ink-muted)',
+                color: active ? 'var(--paper)' : 'var(--ink-muted)',
               }}
               onMouseEnter={(e) => {
                 if (!active) {
@@ -166,7 +167,7 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
           onClick={handleLogout}
           title={user?.full_name ?? 'Account'}
           className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold mt-1 transition-opacity hover:opacity-80"
-          style={{ background: 'var(--ink-strong)', color: '#fff' }}
+          style={{ background: 'var(--ink-strong)', color: 'var(--paper)' }}
         >
           {initials}
         </button>
@@ -178,7 +179,7 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
   return (
     <aside
       className="w-[248px] flex-shrink-0 flex flex-col"
-      style={{ background: '#F7F7F6', borderRight: '1px solid var(--line)' }}
+      style={{ background: 'var(--surface-2)', borderRight: '1px solid var(--line)' }}
     >
       {/* Studio header */}
       <div
@@ -187,7 +188,7 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
       >
         <div
           className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-          style={{ background: 'var(--ink-strong)', color: '#fff' }}
+          style={{ background: 'var(--ink-strong)', color: 'var(--paper)' }}
         >
           <span className="text-[8px] font-bold tracking-tight">WAC</span>
         </div>
@@ -219,7 +220,7 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
         <button
           onClick={() => navigate('/create')}
           className="w-full h-9 px-3 rounded-xl text-[13px] font-semibold flex items-center gap-2 transition-all"
-          style={{ background: 'var(--ink-strong)', color: '#fff' }}
+          style={{ background: 'var(--ink-strong)', color: 'var(--paper)' }}
           onMouseEnter={(e) => (e.currentTarget.style.background = '#1C1A17')}
           onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--ink-strong)')}
         >
@@ -315,6 +316,17 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
           shortcut="?"
           onClick={() => setShortcutsOpen(true)}
         />
+
+        {/* Theme toggle */}
+        <div
+          className="flex items-center justify-between px-2 mt-1"
+          style={{ height: 30 }}
+        >
+          <span className="text-[12px] font-medium" style={{ color: 'var(--ink-soft)' }}>
+            Theme
+          </span>
+          <ThemeToggle />
+        </div>
       </div>
 
       {/* Bottom — user + settings */}
@@ -328,7 +340,7 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
           >
             <div
               className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0"
-              style={{ background: 'var(--ink-strong)', color: '#fff' }}
+              style={{ background: 'var(--ink-strong)', color: 'var(--paper)' }}
             >
               {initials}
             </div>

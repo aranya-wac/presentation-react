@@ -26,6 +26,36 @@
      stay valid; tweak only if you want a colored highlight later. */
   --accent: #000000;
   --accent-soft: #F2F2F2;
+
+  color-scheme: light;
+}
+
+/* ── Dark theme — flips every token. Activated by data-theme="dark" on
+   the <html> element (set by the useThemeMode hook). Anything that already
+   uses var(--*) inherits the new palette for free. Hard-coded #fff / #000
+   inline styles need to be migrated to tokens before they read correctly
+   in dark mode. */
+:root[data-theme='dark'] {
+  /* Surfaces — neutral charcoal hierarchy, not pure black. Pure black with
+     bright text causes more eye strain; #0E0E10 gives a subtle gradient feel. */
+  --paper:    #0E0E10;
+  --paper-2:  #141417;
+  --surface:  #18181B;
+  --surface-2:#1F1F23;
+
+  /* Ink — inverted hierarchy, never pure white to avoid harshness. */
+  --ink-strong: #F5F5F5;
+  --ink:        #E5E5E5;
+  --ink-soft:   #A1A1AA;
+  --ink-muted:  #71717A;
+  --ink-faint:  #52525B;
+  --line:       rgba(255, 255, 255, 0.08);
+  --line-strong:rgba(255, 255, 255, 0.16);
+
+  --accent: #FAFAFA;
+  --accent-soft: rgba(255, 255, 255, 0.06);
+
+  color-scheme: dark;
 }
 
 html, body {
