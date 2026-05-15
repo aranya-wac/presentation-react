@@ -694,7 +694,7 @@ export function PresentationPage() {
   }
 
   // ── Export / Download ───────────────────────────────────────────────────────
-  const handleDownload = async (format: 'pptx' | 'html') => {
+  const handleDownload = async (format: 'pptx' | 'pdf' | 'html') => {
     if (!id) return
     setDownloadOpen(false)
     setExporting(true)
@@ -886,7 +886,7 @@ export function PresentationPage() {
               <div style={{ padding: '10px 14px 6px', fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.35)', letterSpacing: 1, textTransform: 'uppercase' }}>
                 Choose format
               </div>
-              {(['pptx', 'html'] as const).map((fmt) => (
+              {(['pdf', 'pptx', 'html'] as const).map((fmt) => (
                 <button
                   key={fmt}
                   onClick={() => handleDownload(fmt)}
@@ -895,16 +895,20 @@ export function PresentationPage() {
                     border: 'none', padding: '10px 14px',
                     color: '#e2e8f0', fontSize: 13, fontWeight: 500,
                     cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10,
-                    borderTop: fmt === 'html' ? '1px solid rgba(255,255,255,0.06)' : 'none',
+                    borderTop: fmt !== 'pdf' ? '1px solid rgba(255,255,255,0.06)' : 'none',
                   }}
                   onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)'}
                   onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'none'}
                 >
-                  <span style={{ fontSize: 18 }}>{fmt === 'pptx' ? '📊' : '🌐'}</span>
+                  <span style={{ fontSize: 18 }}>{fmt === 'pdf' ? '📄' : fmt === 'pptx' ? '📊' : '🌐'}</span>
                   <div>
                     <div style={{ fontWeight: 600 }}>{fmt.toUpperCase()}</div>
                     <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.4)', marginTop: 1 }}>
-                      {fmt === 'pptx' ? 'PowerPoint file' : 'Web HTML file'}
+                      {fmt === 'pdf'
+                        ? 'PDF — exact match to web (recommended)'
+                        : fmt === 'pptx'
+                          ? 'PowerPoint file — editable, may overflow boxes'
+                          : 'Web HTML file'}
                     </div>
                   </div>
                 </button>
