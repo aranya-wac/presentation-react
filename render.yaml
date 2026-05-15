@@ -1,0 +1,30 @@
+# Exported from Render on 2026-05-15T06:46:28Z
+version: "1"
+services:
+- type: web
+  name: wacdeckstudio-api
+  runtime: docker
+  repo: https://github.com/aranya-wac/presentation-python
+  plan: free
+  envVars:
+  - key: ALLOWED_ORIGINS
+    sync: false
+  - key: GEMINI_API_KEY
+    sync: false
+  - key: USE_EXTRACTION_WORKER
+    sync: false
+  - key: MAX_UPLOAD_SIZE_MB
+    sync: false
+  - key: REFRESH_TOKEN_EXPIRE_DAYS
+    sync: false
+  - key: ACCESS_TOKEN_EXPIRE_MINUTES
+    sync: false
+  - key: SECRET_KEY
+    sync: false
+  - key: DATABASE_URL
+    sync: false
+  region: oregon
+  healthCheckPath: /health
+  dockerContext: .
+  dockerfilePath: ./Dockerfile
+  autoDeployTrigger: commit
