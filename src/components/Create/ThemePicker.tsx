@@ -226,8 +226,8 @@ const ThemeChip = (function () {
         transition={{ type: 'spring', stiffness: 600, damping: 30, mass: 0.4 }}
         className="relative flex items-center gap-1.5 h-8 px-2.5 rounded-full transition-colors"
         style={{
-          background: selected ? 'var(--ink-strong)' : '#fff',
-          color: selected ? '#fff' : 'var(--ink-strong)',
+          background: selected ? 'var(--ink-strong)' : 'var(--surface)',
+          color: selected ? 'var(--paper)' : 'var(--ink-strong)',
           border: `1px solid ${selected ? 'var(--ink-strong)' : 'var(--line)'}`,
           boxShadow: selected
             ? '0 1px 2px rgba(15,14,12,0.08), 0 4px 12px -2px rgba(15,14,12,0.15)'
@@ -237,7 +237,7 @@ const ThemeChip = (function () {
         }}
         onMouseDown={(e) => {
           // Subtle hover lift via direct style — keeps spring tight.
-          if (!selected) (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(0,0,0,0.22)'
+          if (!selected) (e.currentTarget as HTMLButtonElement).style.borderColor = 'var(--line-strong)'
         }}
       >
         {/* Palette swatch — quarter-circle background + accent stripe */}

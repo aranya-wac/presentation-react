@@ -348,13 +348,13 @@ export function PromptScreen({ onGenerate, isGenerating, defaultPrompt }: Props)
       {/* Top bar */}
       <div
         className="flex items-center justify-between px-10 h-14 relative z-10"
-        style={{ borderBottom: '1px solid var(--line)', backdropFilter: 'blur(8px)', background: 'rgba(245,242,235,0.6)' }}
+        style={{ borderBottom: '1px solid var(--line)', backdropFilter: 'blur(8px)', background: 'var(--paper)' }}
       >
         <button
           onClick={() => navigate(-1)}
           className="flex items-center gap-2 px-3 h-9 rounded-full text-[13px] transition-colors"
           style={{ color: 'var(--ink)' }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(10,9,7,0.05)')}
+          onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--accent-soft)')}
           onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
         >
           <ArrowLeft size={14} />
@@ -501,7 +501,7 @@ export function PromptScreen({ onGenerate, isGenerating, defaultPrompt }: Props)
                     className="text-[12px] font-semibold px-3 h-7 rounded-md transition-colors"
                     style={{
                       background: urlValue.trim() ? 'var(--ink-strong)' : 'rgba(10,9,7,0.15)',
-                      color: '#fff',
+                      color: 'var(--paper)',
                       cursor: urlValue.trim() ? 'pointer' : 'not-allowed',
                     }}
                   >
@@ -693,7 +693,7 @@ export function PromptScreen({ onGenerate, isGenerating, defaultPrompt }: Props)
                       className="text-[11.5px] font-semibold px-2.5 h-6 rounded-[5px] transition-colors capitalize"
                       style={{
                         background: level === lv ? 'var(--ink-strong)' : 'transparent',
-                        color: level === lv ? '#fff' : 'var(--ink-soft)',
+                        color: level === lv ? 'var(--paper)' : 'var(--ink-soft)',
                       }}
                     >
                       {lv}
@@ -744,7 +744,7 @@ export function PromptScreen({ onGenerate, isGenerating, defaultPrompt }: Props)
                   background: canSubmit
                     ? 'linear-gradient(135deg, var(--ink-strong) 0%, #2A2620 100%)'
                     : 'rgba(10,9,7,0.15)',
-                  color: '#fff',
+                  color: 'var(--paper)',
                   cursor: canSubmit ? 'pointer' : 'not-allowed',
                   boxShadow: canSubmit
                     ? '0 1px 0 rgba(255,255,255,0.1) inset, 0 6px 16px -4px rgba(15,14,12,0.35), 0 2px 4px rgba(15,14,12,0.18)'

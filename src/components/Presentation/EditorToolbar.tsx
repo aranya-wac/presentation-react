@@ -61,8 +61,8 @@ export function EditorToolbar({
       onClick={(e) => e.stopPropagation()}
       style={{
         display: 'flex', alignItems: 'center', gap: 4,
-        background: '#ffffff',
-        border: '1px solid #E5E7EB',
+        background: 'var(--surface)',
+        border: '1px solid var(--line)',
         borderRadius: 12,
         padding: '6px 10px',
         boxShadow: '0 4px 12px rgba(15, 23, 42, 0.08)',
@@ -201,8 +201,8 @@ function TemplatePopover({
       style={{
         position: 'absolute', top: 42, left: 0, zIndex: 60,
         minWidth: 220,
-        background: '#fff',
-        border: '1px solid #E5E7EB',
+        background: 'var(--surface)',
+        border: '1px solid var(--line)',
         borderRadius: 10, overflow: 'hidden',
         boxShadow: '0 12px 32px rgba(15,23,42,0.18)',
       }}

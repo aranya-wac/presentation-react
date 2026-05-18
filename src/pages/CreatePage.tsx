@@ -535,7 +535,7 @@ export function CreatePage() {
                 style={{
                   padding: '6px 16px', borderRadius: 999, fontSize: 12, fontWeight: 600,
                   background: mode === m ? 'var(--ink-strong)' : 'transparent',
-                  color: mode === m ? '#fff' : 'var(--ink-soft)',
+                  color: mode === m ? 'var(--paper)' : 'var(--ink-soft)',
                   border: 'none', cursor: 'pointer',
                 }}
               >
