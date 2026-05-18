@@ -107,9 +107,6 @@ export function DashboardPage() {
           </p>
         </div>
 
-        {/* ── Quick generate input ── */}
-        <QuickGenerateInput onSubmit={(prompt) => navigate(`/create?prompt=${encodeURIComponent(prompt)}`)} />
-
         {/* ── Quick actions ── */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-20">
           <QuickAction
@@ -236,139 +233,6 @@ export function DashboardPage() {
   )
 }
 
-// ── Quick generate input ────────────────────────────────────────────────────
-function QuickGenerateInput({ onSubmit }: { onSubmit: (prompt: string) => void }) {
-  const [value, setValue] = useState('')
-  const [focused, setFocused] = useState(false)
-  const ready = value.trim().length > 1
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!ready) return
-    onSubmit(value.trim())
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="mb-12 max-w-[820px] relative">
-      {/* Ambient glow behind the bar so it visually pops off the page */}
-      <div
-        aria-hidden
-        className="absolute inset-0 -m-6 rounded-[32px] pointer-events-none transition-opacity duration-500"
-        style={{
-          background:
-            'radial-gradient(ellipse 60% 80% at 50% 50%, rgba(99,102,241,0.10) 0%, rgba(139,92,246,0.06) 35%, transparent 70%)',
-          opacity: focused ? 1 : 0.55,
-        }}
-      />
-
-      <div className="relative">
-        <p
-          className="eyebrow mb-3 flex items-center gap-2"
-          style={{ color: 'var(--ink-faint)' }}
-        >
-          <span
-            className="inline-block w-1.5 h-1.5 rounded-full"
-            style={{
-              background: '#8b5cf6',
-              boxShadow: '0 0 8px rgba(139,92,246,0.6)',
-            }}
-          />
-          AI Command Center
-        </p>
-
-        <div
-          className="flex items-center gap-3 pl-5 pr-2 h-[64px] rounded-[20px] transition-all duration-200"
-          style={{
-            background: '#fff',
-            border: `1.5px solid ${focused ? 'rgba(99,102,241,0.55)' : 'var(--line-strong, rgba(0,0,0,0.12))'}`,
-            boxShadow: focused
-              ? '0 0 0 4px rgba(99,102,241,0.12), 0 12px 32px -8px rgba(99,102,241,0.25), 0 4px 12px rgba(15,14,12,0.06)'
-              : '0 2px 4px rgba(15,14,12,0.04), 0 12px 28px -10px rgba(15,14,12,0.10)',
-          }}
-        >
-          <Sparkles
-            size={18}
-            style={{
-              color: focused ? '#6366f1' : 'var(--ink-muted)',
-              flexShrink: 0,
-              transition: 'color 200ms ease',
-            }}
-          />
-          <input
-            type="text"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && (e.metaKey || e.ctrlKey) && ready) {
-                e.preventDefault()
-                onSubmit(value.trim())
-              }
-            }}
-            placeholder="What do you want to present about? Try “Q3 board update” or “AI in healthcare”…"
-            className="flex-1 outline-none text-[15px] bg-transparent"
-            style={{ color: 'var(--ink-strong)' }}
-            autoComplete="off"
-          />
-          <button
-            type="submit"
-            disabled={!ready}
-            className="flex items-center gap-2 h-[48px] px-5 rounded-[14px] text-[13.5px] font-semibold transition-all flex-shrink-0"
-            style={{
-              background: ready
-                ? 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)'
-                : 'rgba(0,0,0,0.04)',
-              color: ready ? '#fff' : 'var(--ink-muted)',
-              cursor: ready ? 'pointer' : 'not-allowed',
-              whiteSpace: 'nowrap',
-              boxShadow: ready
-                ? '0 4px 12px rgba(99,102,241,0.35), 0 1px 2px rgba(99,102,241,0.4) inset, 0 -1px 2px rgba(0,0,0,0.1) inset'
-                : 'none',
-            }}
-            onMouseEnter={(e) => {
-              if (ready) {
-                e.currentTarget.style.transform = 'translateY(-1px)'
-                e.currentTarget.style.boxShadow =
-                  '0 6px 18px rgba(99,102,241,0.45), 0 1px 2px rgba(99,102,241,0.4) inset, 0 -1px 2px rgba(0,0,0,0.1) inset'
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (ready) {
-                e.currentTarget.style.transform = 'translateY(0)'
-                e.currentTarget.style.boxShadow =
-                  '0 4px 12px rgba(99,102,241,0.35), 0 1px 2px rgba(99,102,241,0.4) inset, 0 -1px 2px rgba(0,0,0,0.1) inset'
-              }
-            }}
-          >
-            <Sparkles size={14} />
-            Generate
-            <span
-              className="font-mono"
-              style={{
-                opacity: ready ? 0.6 : 0.4,
-                fontSize: 10.5,
-                fontWeight: 600,
-                marginLeft: 2,
-                letterSpacing: 0.5,
-              }}
-            >
-              ⌘↵
-            </span>
-          </button>
-        </div>
-
-        <p
-          className="text-[11.5px] mt-2.5 ml-1"
-          style={{ color: 'var(--ink-faint)' }}
-        >
-          Press <span className="font-mono" style={{ color: 'var(--ink-muted)' }}>⌘↵</span> to generate · or attach a document on the next step
-        </p>
-      </div>
-    </form>
-  )
-}
-
 // ── Section header ──────────────────────────────────────────────────────────
 function SectionHeader({
   eyebrow,
@@ -452,7 +316,7 @@ function QuickAction({
       onClick={onClick}
       className="group relative text-left p-6 rounded-2xl transition-all duration-200 ease-out"
       style={{
-        background: '#fff',
+        background: 'var(--surface)',
         border: '1px solid var(--line)',
         boxShadow: '0 1px 2px rgba(15,14,12,0.05)',
       }}
@@ -657,7 +521,7 @@ function DeckCard({
           {menuOpen && (
             <div
               className="absolute right-0 top-8 z-10 rounded-xl py-1 w-36 shadow-lift"
-              style={{ background: '#fff', border: '1px solid var(--line)' }}
+              style={{ background: 'var(--surface)', border: '1px solid var(--line)' }}
               onClick={(e) => e.stopPropagation()}
             >
               <button

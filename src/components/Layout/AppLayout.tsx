@@ -9,7 +9,6 @@ import {
   ChevronsRight,
   Plus,
   FolderKanban,
-  Palette,
   Keyboard,
   Sparkles,
 } from 'lucide-react'
@@ -305,11 +304,6 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
 
       {/* Secondary footer links */}
       <div className="px-3 pb-2 flex flex-col gap-0.5" style={{ borderTop: usage ? 'none' : '1px solid var(--line)', paddingTop: usage ? 0 : 12 }}>
-        <FooterLink
-          icon={<Palette size={13} />}
-          label="Brand kit"
-          onClick={() => navigate('/brand-kit')}
-        />
         <FooterLink
           icon={<Keyboard size={13} />}
           label="Shortcuts"

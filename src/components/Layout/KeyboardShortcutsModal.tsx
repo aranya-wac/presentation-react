@@ -61,7 +61,7 @@ export function KeyboardShortcutsModal({ onClose }: Props) {
         style={{
           width: 580,
           maxHeight: '85vh',
-          background: '#fff',
+          background: 'var(--surface)',
           borderRadius: 18,
           boxShadow: '0 24px 64px -16px rgba(15,14,12,0.35), 0 8px 24px rgba(15,14,12,0.12)',
           display: 'flex', flexDirection: 'column',
@@ -131,7 +131,7 @@ export function KeyboardShortcutsModal({ onClose }: Props) {
                             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                             minWidth: 28, height: 24, padding: '0 7px',
                             borderRadius: 6,
-                            background: '#fff',
+                            background: 'var(--surface-2)',
                             border: '1px solid var(--line)',
                             boxShadow: '0 1px 0 rgba(15,14,12,0.04), inset 0 -1px 0 rgba(15,14,12,0.05)',
                             color: 'var(--ink-strong)',

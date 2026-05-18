@@ -14,7 +14,6 @@ import { ProjectDetailPage } from './pages/ProjectDetailPage'
 import { PresentationPage } from './pages/PresentationPage'
 import { GeneratePage } from './pages/GeneratePage'
 import { CreatePage } from './pages/CreatePage'
-import { BrandKitPage } from './pages/BrandKitPage'
 import { CreateFromTemplatePage } from './pages/CreateFromTemplatePage'
 import { AuthGuard } from './components/Auth/AuthGuard'
 import { ToastProvider } from './components/ui/Toast'
@@ -43,10 +42,6 @@ export default function App() {
         <Route
           path="/templates"
           element={<AuthGuard><TemplatesPage /></AuthGuard>}
-        />
-        <Route
-          path="/brand-kit"
-          element={<AuthGuard><BrandKitPage /></AuthGuard>}
         />
         <Route
           path="/projects"
