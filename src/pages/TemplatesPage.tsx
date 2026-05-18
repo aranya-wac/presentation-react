@@ -458,28 +458,29 @@ export function TemplatesPage() {
           </div>
         </div>
 
-        {/* Source filter pills */}
-        <div className="flex items-center gap-1 mb-4 flex-wrap">
+        {/* Source + Category chips, single row (separated by a divider) */}
+        <div className="flex items-center gap-1 mb-12 flex-wrap">
           {([
             { value: 'all', label: 'All' },
             { value: 'mine', label: 'Mine' },
             { value: 'builtin', label: 'Built-in' },
           ] as const).map((opt) => (
             <Chip
-              key={opt.value}
+              key={`src-${opt.value}`}
               active={sourceFilter === opt.value}
               onClick={() => setSourceFilter(opt.value)}
             >
               {opt.label}
             </Chip>
           ))}
-        </div>
-
-        {/* Category chips */}
-        <div className="flex items-center gap-1 mb-12 flex-wrap">
+          <span
+            aria-hidden
+            className="mx-2 h-5 w-px"
+            style={{ background: 'var(--line)' }}
+          />
           {categories.map((cat) => (
             <Chip
-              key={cat}
+              key={`cat-${cat}`}
               active={activeCategory === cat}
               onClick={() => setActiveCategory(cat)}
             >
