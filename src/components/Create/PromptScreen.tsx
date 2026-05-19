@@ -45,10 +45,10 @@ const TEMPLATES: TemplateCard[] = [
     description: 'Problem, solution, traction, ask. Series A to C ready.',
     prompt:
       'A 10-slide Series A pitch for a B2B SaaS startup. Include market opportunity, product, traction metrics, competitive landscape, roadmap, and the ask.',
-    recommendedTheme: 'stratos',
+    recommendedTheme: 'gamma-midnight',
     recommendedLevel: 'advanced',
     slides: 10,
-    preview: { bg: '#0f172a', ink: '#e2e8f0', accent: '#38bdf8' },
+    preview: { bg: '#050B1F', ink: '#E8EEFF', accent: '#7FB8FF' },
   },
   {
     id: 'board-update',
@@ -57,10 +57,10 @@ const TEMPLATES: TemplateCard[] = [
     description: 'Quarterly performance, KPIs, strategic priorities.',
     prompt:
       'Q3 2026 board update for an early-stage company. Cover revenue, customer growth, key wins, headcount, runway, and Q4 priorities.',
-    recommendedTheme: 'editorial',
+    recommendedTheme: 'gamma-ivory',
     recommendedLevel: 'advanced',
     slides: 8,
-    preview: { bg: '#faf8f3', ink: '#1c1b17', accent: '#8b1a1a' },
+    preview: { bg: '#FBF8F1', ink: '#1A2440', accent: '#BF8A3B' },
   },
   {
     id: 'product-launch',
@@ -69,10 +69,10 @@ const TEMPLATES: TemplateCard[] = [
     description: 'Hero story, features, positioning, launch timeline.',
     prompt:
       'Product launch deck for a new mobile app. Include the problem we solve, key features, target users, pricing, launch timeline, and marketing plan.',
-    recommendedTheme: 'brutalist',
+    recommendedTheme: 'gamma-sunset',
     recommendedLevel: 'advanced',
     slides: 8,
-    preview: { bg: '#fff9e6', ink: '#000000', accent: '#ffd60a' },
+    preview: { bg: '#0D0604', ink: '#FFEEDD', accent: '#FF8C42' },
   },
   {
     id: 'qbr',
@@ -81,10 +81,10 @@ const TEMPLATES: TemplateCard[] = [
     description: 'Account health, usage, outcomes, expansion path.',
     prompt:
       'Customer success quarterly business review. Cover account health, product adoption, key outcomes achieved, support escalations, and the renewal/expansion plan.',
-    recommendedTheme: 'mercury',
+    recommendedTheme: 'gamma-slate',
     recommendedLevel: 'simple',
     slides: 7,
-    preview: { bg: '#f9fafb', ink: '#111827', accent: '#6b7280' },
+    preview: { bg: '#F7F7F7', ink: '#1A1A1A', accent: '#A8A8A8' },
   },
   {
     id: 'team-allhands',
@@ -93,10 +93,10 @@ const TEMPLATES: TemplateCard[] = [
     description: 'Wins, OKR progress, what changed, what is next.',
     prompt:
       'Monthly engineering team all-hands. Cover wins from this month, OKR progress, team headcount changes, upcoming releases, and what we are stopping doing.',
-    recommendedTheme: 'forest',
+    recommendedTheme: 'gamma-sage',
     recommendedLevel: 'simple',
     slides: 6,
-    preview: { bg: '#0f2419', ink: '#f5f1e8', accent: '#10b981' },
+    preview: { bg: '#081A11', ink: '#E8F2EC', accent: '#7FCBA0' },
   },
   {
     id: 'workshop',
@@ -105,10 +105,10 @@ const TEMPLATES: TemplateCard[] = [
     description: 'Concept → example → exercise → recap.',
     prompt:
       'Workshop deck teaching the fundamentals of prompt engineering for product managers. Include intro, 4 core concepts with examples, hands-on exercises, and a recap.',
-    recommendedTheme: 'nova',
+    recommendedTheme: 'gamma-aurora',
     recommendedLevel: 'simple',
     slides: 10,
-    preview: { bg: '#f8f4ff', ink: '#4c1d95', accent: '#7c3aed' },
+    preview: { bg: '#0A0418', ink: '#F5EBFF', accent: '#B794F6' },
   },
 ]
 

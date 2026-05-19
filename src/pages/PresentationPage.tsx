@@ -293,13 +293,24 @@ export function PresentationPage() {
   }, [slides, layouts, id])
 
   // ── Block interactions ──────────────────────────────────────────────────────
+  // Gamma-style: single click on an UNSELECTED block selects it; clicking
+  // an ALREADY-selected block enters in-place edit mode. Double-click also
+  // enters edit mode immediately. The right-side property panel still
+  // works but inline editing is the primary path.
   const handleBlockClick = useCallback((blockId: string) => {
     if (!blockId) { setSelectedBlockId(null); setEditingBlockId(null); return }
-    setSelectedBlockId(blockId)
-    setEditingBlockId(null)
+    setSelectedBlockId((prevSel) => {
+      if (prevSel === blockId) {
+        setEditingBlockId(blockId)  // second click on same block → edit
+      } else {
+        setEditingBlockId(null)
+      }
+      return blockId
+    })
   }, [])
 
   const handleBlockDoubleClick = useCallback((blockId: string) => {
+    setSelectedBlockId(blockId)
     setEditingBlockId(blockId)
   }, [])
 
@@ -1128,6 +1139,8 @@ export function PresentationPage() {
               onBlockContentChange={handleBlockContentChange}
               editable
               onBlockPositionChange={handleBlockPositionChange}
+              totalSlides={slides.length}
+              deckTitle={presentation?.title}
             />
           )}
 

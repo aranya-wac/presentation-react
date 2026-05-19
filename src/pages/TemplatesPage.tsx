@@ -334,7 +334,7 @@ function SlidePreviewCard({
   )
 }
 
-type SourceFilter = 'all' | 'mine' | 'builtin'
+type SourceFilter = 'all' | 'mine'
 
 // ── Templates page ──────────────────────────────────────────────────────────
 export function TemplatesPage() {
@@ -458,35 +458,54 @@ export function TemplatesPage() {
           </div>
         </div>
 
-        {/* Source + Category chips, single row (separated by a divider) */}
-        <div className="flex items-center gap-1 mb-12 flex-wrap">
-          {([
-            { value: 'all', label: 'All' },
-            { value: 'mine', label: 'Mine' },
-            { value: 'builtin', label: 'Built-in' },
-          ] as const).map((opt) => (
-            <Chip
-              key={`src-${opt.value}`}
-              active={sourceFilter === opt.value}
-              onClick={() => setSourceFilter(opt.value)}
+        {/* Filters — two clearly-separated rows so users immediately see
+            that source ("view") and category ("type") are distinct controls.
+            Source has only two options, so it renders as a small tab strip
+            on the right of the toolbar; categories get their own row below. */}
+        <div className="mb-10">
+          {/* Source tab strip — minimal, top-right anchor */}
+          <div className="flex items-center justify-between mb-6">
+            <p className="eyebrow" style={{ color: 'var(--ink-faint)' }}>
+              Browse by type
+            </p>
+            <div
+              className="inline-flex items-center rounded-full p-1"
+              style={{ background: 'var(--surface)', border: '1px solid var(--line)' }}
             >
-              {opt.label}
-            </Chip>
-          ))}
-          <span
-            aria-hidden
-            className="mx-2 h-5 w-px"
-            style={{ background: 'var(--line)' }}
-          />
-          {categories.map((cat) => (
-            <Chip
-              key={`cat-${cat}`}
-              active={activeCategory === cat}
-              onClick={() => setActiveCategory(cat)}
-            >
-              {cat === 'all' ? 'All' : cat}
-            </Chip>
-          ))}
+              {([
+                { value: 'all', label: 'All templates' },
+                { value: 'mine', label: 'My templates' },
+              ] as const).map((opt) => {
+                const active = sourceFilter === opt.value
+                return (
+                  <button
+                    key={opt.value}
+                    onClick={() => setSourceFilter(opt.value)}
+                    className="px-4 py-1.5 rounded-full text-[12px] font-medium transition-colors"
+                    style={{
+                      background: active ? 'var(--ink-strong)' : 'transparent',
+                      color: active ? 'var(--bg)' : 'var(--ink-soft)',
+                    }}
+                  >
+                    {opt.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Category chips — single labeled row */}
+          <div className="flex items-center gap-1 flex-wrap">
+            {categories.map((cat) => (
+              <Chip
+                key={`cat-${cat}`}
+                active={activeCategory === cat}
+                onClick={() => setActiveCategory(cat)}
+              >
+                {cat === 'all' ? 'All types' : cat}
+              </Chip>
+            ))}
+          </div>
         </div>
 
         {/* Grid */}

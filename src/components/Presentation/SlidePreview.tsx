@@ -1,6 +1,45 @@
 import { useEffect, useRef } from 'react'
 import type { Block, Position, Slide, Theme } from '../../types'
 import { ChartElement } from './ChartElement'
+import {
+  Sparkles, Zap, Users, TrendingUp, Palette, ShieldCheck, Rocket, Award,
+  Lightbulb, Globe, Target, Compass, MessageCircle, Database, Smartphone,
+  Calendar, AlertTriangle, CheckCircle2, GraduationCap, ShoppingCart,
+  Code2, Cloud, CircleCheck, BarChart3, DollarSign, PlugZap,
+  type LucideIcon,
+} from 'lucide-react'
+
+// Gamma-style card icon registry. Backend emits icon names matching the
+// _ICON_KEYWORDS map in slide_generator_agent.py. Unknown names fall back
+// to CircleCheck so cards never render iconless.
+const CARD_ICONS: Record<string, LucideIcon> = {
+  'dollar-sign':     DollarSign,
+  'bar-chart-3':     BarChart3,
+  'sparkles':        Sparkles,
+  'zap':             Zap,
+  'users':           Users,
+  'trending-up':     TrendingUp,
+  'palette':         Palette,
+  'shield-check':    ShieldCheck,
+  'rocket':          Rocket,
+  'award':           Award,
+  'plug-zap':        PlugZap,
+  'lightbulb':       Lightbulb,
+  'globe':           Globe,
+  'target':          Target,
+  'compass':         Compass,
+  'message-circle':  MessageCircle,
+  'database':        Database,
+  'smartphone':      Smartphone,
+  'calendar':        Calendar,
+  'alert-triangle':  AlertTriangle,
+  'check-circle-2':  CheckCircle2,
+  'graduation-cap':  GraduationCap,
+  'shopping-cart':   ShoppingCart,
+  'code-2':          Code2,
+  'cloud':           Cloud,
+  'circle-check':    CircleCheck,
+}
 
 interface Props {
   slide: Slide
@@ -15,6 +54,10 @@ interface Props {
   editable?: boolean
   /** Called whenever a block's position changes during drag or resize. */
   onBlockPositionChange?: (blockId: string, next: Position) => void
+  /** Total slides in deck — drives the "01 / N" progress chrome. */
+  totalSlides?: number
+  /** Deck title — shown as a subtle footer line. */
+  deckTitle?: string
 }
 
 const W = 1280
@@ -280,6 +323,158 @@ function renderBlock(block: Block, ctx: RenderCtx) {
         >No image</div>
       )
     }
+    // Hero illustrations sit at either edge of the slide (left for split_panel
+    // replacements, right for title/closing). Both variants get the same
+    // blend treatment so the image visually merges into the slide.
+    const isTitleIllustration = (pos.x >= 600 || pos.x === 0) && pos.h >= 400
+    // Title-slide SQUARE photo flush to top-left corner (Gamma editorial
+    // style — clean square, not curved). Detected by:
+    // - x=0 (corner-flush)
+    // - y=0 (top-corner-flush)
+    // - square-ish dimensions (w ≈ h)
+    // - large enough (h ≥ 400)
+    // (Note: split_panel illustrations at x=0 are TALLER than wide, so the
+    // square check `w ≈ h` distinguishes the two.)
+    const isPhotoHeroLeft = pos.x === 0 && pos.y === 0 && pos.h >= 400 && Math.abs(pos.w - pos.h) < 100
+    // Full-bleed background (Gamma "Industry Benchmark"-style title): the
+    // image covers the whole slide canvas, text overlays on top. Detected by
+    // x=0, y=0, w≈1280, h≈720.
+    const isFullBleedBg = pos.x === 0 && pos.y === 0 && pos.w >= 1200 && pos.h >= 680
+
+    // Theme detection (used for blend-mode + glow color).
+    const tbg = theme?.colors?.background || ''
+    const isDarkTheme = /^#[0-9a-f]{6}$/i.test(tbg) && (() => {
+      const h = tbg.slice(1)
+      const r = parseInt(h.slice(0, 2), 16)
+      const g = parseInt(h.slice(2, 4), 16)
+      const b = parseInt(h.slice(4, 6), 16)
+      return (0.2126*r + 0.7152*g + 0.0722*b) / 255 < 0.35
+    })()
+    const themeAccent = theme?.colors?.accent || '#6366F1'
+
+    // Gamma title illustrations blend INTO the slide. Two combined effects:
+    // (a) Tight radial mask — only the center subject is fully opaque;
+    //     edges fade to transparent fast so any image bg leftover disappears.
+    // (b) `lighten` blend on dark themes — pixels darker than the slide bg
+    //     vanish, only the brighter illustration shapes show through.
+    //     `darken` on light themes does the inverse.
+    const titleMask = isTitleIllustration
+      ? 'radial-gradient(circle at center, #000 30%, rgba(0,0,0,0.7) 45%, rgba(0,0,0,0.15) 58%, transparent 68%)'
+      : undefined
+    const titleBlendMode: React.CSSProperties['mixBlendMode'] = isTitleIllustration
+      ? (isDarkTheme ? 'lighten' : 'darken')
+      : undefined
+
+    if (isFullBleedBg) {
+      // Full-bleed background photo (Gamma "Industry Benchmark"-style).
+      // Two flavors:
+      //   - title/closing: soft top-to-bottom vignette so the photo's depth
+      //     reads through.
+      //   - deck-wide bg on content slides (id starts "deck-bg-"): stronger
+      //     uniform darkness so cards/text stay readable on top.
+      const isDeckBg = String(block.id || '').startsWith('deck-bg-')
+      // Overlay color matches the theme's lightness so the existing text
+      // colors stay readable: dark themes get a dark wash, light themes
+      // get a pale wash.
+      const overlay = isDeckBg
+        ? (isDarkTheme ? 'rgba(0,0,0,0.62)' : 'rgba(255,255,255,0.55)')
+        : (isDarkTheme
+            ? 'linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0.55) 100%)'
+            : 'linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.35) 60%, rgba(255,255,255,0.5) 100%)')
+      return (
+        <div
+          key={block.id}
+          style={{
+            ...baseStyle,
+            borderRadius: 0,
+            overflow: 'hidden',
+          }}
+          {...handlers}
+        >
+          <img
+            src={block.content}
+            alt=""
+            draggable={false}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: overlay,
+            }}
+          />
+        </div>
+      )
+    }
+
+    if (isPhotoHeroLeft) {
+      // Title-slide hero illustration: SQUARE flush to the top-left corner.
+      // A tight right-edge alpha fade (final ~7% of width) dissolves any
+      // residual seam between the AI-generated image and the slide canvas
+      // when the image's background tone doesn't perfectly match. Still
+      // reads as a square — not a curve — at presentation distance.
+      const edgeFade =
+        'linear-gradient(to right, #000 0%, #000 93%, transparent 100%)'
+      return (
+        <img
+          key={block.id}
+          src={block.content}
+          alt=""
+          draggable={false}
+          style={{
+            ...baseStyle,
+            objectFit: 'cover',
+            borderRadius: 0,
+            WebkitMaskImage: edgeFade,
+            maskImage: edgeFade,
+          }}
+          {...handlers}
+        />
+      )
+    }
+
+    if (isTitleIllustration) {
+      // Wrap image in a positioned container so we can render an accent
+      // glow underneath. The glow gives the illustration the "designed"
+      // sense of presence Gamma achieves with hand-crafted compositions.
+      return (
+        <div
+          key={block.id}
+          style={{ ...baseStyle, overflow: 'visible' }}
+          {...handlers}
+        >
+          {/* Accent radial glow behind the illustration */}
+          <div style={{
+            position: 'absolute',
+            inset: '-10%',
+            background: `radial-gradient(circle at 50% 50%, ${themeAccent}33 0%, ${themeAccent}11 35%, transparent 65%)`,
+            filter: `blur(${8 * scale}px)`,
+            pointerEvents: 'none',
+          }} />
+          <img
+            src={block.content}
+            alt=""
+            draggable={false}
+            style={{
+              position: 'absolute', inset: 0,
+              width: '100%', height: '100%',
+              objectFit: 'cover',
+              maskImage:       titleMask,
+              WebkitMaskImage: titleMask,
+              mixBlendMode:    titleBlendMode,
+              pointerEvents:   'none',
+            }}
+          />
+        </div>
+      )
+    }
     return (
       <img
         key={block.id}
@@ -289,7 +484,10 @@ function renderBlock(block: Block, ctx: RenderCtx) {
         style={{
           ...baseStyle,
           objectFit:    'cover',
-          borderRadius: pos.x === 0 ? 0 : 12 * scale,
+          borderRadius: pos.x === 0 ? 0 : 20 * scale,
+          boxShadow:    pos.x === 0
+            ? 'none'
+            : `0 ${4 * scale}px ${16 * scale}px rgba(0,0,0,0.35)`,
         }}
         {...handlers}
       />
@@ -340,6 +538,13 @@ function renderBlock(block: Block, ctx: RenderCtx) {
     const isDarkCard = bgColor.startsWith('#') &&
       parseInt(bgColor.slice(1), 16) < 0x888888 * 3
 
+    // Gamma-style icon at top-left of card (lucide-react). Backend emits
+    // block.icon as a kebab-case Lucide name; we look up the component.
+    const accentColor = theme?.colors.accent || '#6366f1'
+    const Icon = block.icon ? CARD_ICONS[block.icon] : null
+    const iconBg = isDarkCard ? `${accentColor}20` : 'rgba(0,0,0,0.06)'
+    const iconColor = isDarkCard ? accentColor : (s.color || theme?.colors.primary || '#0F172A')
+
     return (
       <div
         key={block.id}
@@ -351,7 +556,7 @@ function renderBlock(block: Block, ctx: RenderCtx) {
           display:       'flex',
           flexDirection: 'column',
           justifyContent:'flex-start',
-          gap:           6 * scale,
+          gap:           10 * scale,
           boxSizing:     'border-box',
           boxShadow:     isDarkCard
             ? `0 ${8 * scale}px ${24 * scale}px rgba(0,0,0,0.25)`
@@ -359,6 +564,21 @@ function renderBlock(block: Block, ctx: RenderCtx) {
         }}
         {...handlers}
       >
+        {Icon && (
+          <div style={{
+            width:           38 * scale,
+            height:          38 * scale,
+            borderRadius:    10 * scale,
+            background:      iconBg,
+            display:         'flex',
+            alignItems:      'center',
+            justifyContent:  'center',
+            flexShrink:      0,
+            marginBottom:    4 * scale,
+          }}>
+            <Icon size={20 * scale} color={iconColor} strokeWidth={2} />
+          </div>
+        )}
         <span style={{
           fontFamily: s.font_family || 'Inter, sans-serif',
           fontSize:   (s.font_size ?? 18) * scale,
@@ -366,14 +586,15 @@ function renderBlock(block: Block, ctx: RenderCtx) {
           fontStyle:  s.italic ? 'italic' : 'normal',
           textDecoration: s.underline ? 'underline' : 'none',
           color:      s.color || '#ffffff',
-          lineHeight: 1.3,
+          lineHeight: 1.25,
+          letterSpacing: '-0.01em',
         }}>
           {title}
         </span>
         {body && (
           <span style={{
             fontFamily: s.font_family || 'Inter, sans-serif',
-            fontSize:   (s.font_size ?? 18) * 0.75 * scale,
+            fontSize:   (s.font_size ?? 18) * 0.7 * scale,
             fontWeight: 400,
             color:      s.color ? `${s.color}b0` : 'rgba(255,255,255,0.72)',
             lineHeight: 1.5,
@@ -548,17 +769,23 @@ function renderBlock(block: Block, ctx: RenderCtx) {
         style={{ ...baseStyle, display: 'flex', alignItems: 'center' }}
         {...handlers}
       >
-        <span style={{
-          fontFamily:  s.font_family || 'Inter, sans-serif',
-          fontSize:    (s.font_size ?? 52) * scale,
-          fontWeight:  textWeight({ ...s, font_weight: s.font_weight ?? 800 }),
-          fontStyle:   s.italic ? 'italic' : 'normal',
-          textDecoration: s.underline ? 'underline' : 'none',
-          color:       s.color || theme?.colors.primary || '#0F172A',
-          lineHeight:  1.15,
-          textAlign:   (s.text_align as React.CSSProperties['textAlign']) ?? 'left',
-          width:       '100%',
-          letterSpacing: -0.5 * scale,
+        <span
+          className="slide-heading"
+          style={{
+            // Inter Tight is a tighter display variant — produces visibly
+            // sharper headlines than regular Inter at 52pt+.
+            fontFamily:  s.font_family || '"Inter Tight", Inter, sans-serif',
+            fontSize:    (s.font_size ?? 52) * scale,
+            fontWeight:  textWeight({ ...s, font_weight: s.font_weight ?? 800 }),
+            fontStyle:   s.italic ? 'italic' : 'normal',
+            textDecoration: s.underline ? 'underline' : 'none',
+            color:       s.color || theme?.colors.primary || '#0F172A',
+            lineHeight:  1.05,
+            textAlign:   (s.text_align as React.CSSProperties['textAlign']) ?? 'left',
+            width:       '100%',
+            letterSpacing: '-0.025em',
+            // Better kerning for huge headlines.
+            fontFeatureSettings: '"kern" 1, "ss01" 1, "cv11" 1',
         }}>
           {block.content}
         </span>
@@ -659,11 +886,24 @@ export function SlidePreview({
   onBlockContentChange,
   editable = false,
   onBlockPositionChange,
+  totalSlides,
+  deckTitle,
 }: Props) {
   const background = getBackground(slide, theme)
   const selectedBlock = editable
-    ? slide.blocks.find((b) => b.id === selectedBlockId) ?? null
+    ? (slide.blocks ?? []).find((b) => b.id === selectedBlockId) ?? null
     : null
+
+  // Gamma-style chrome: subtle inset highlight + corner radius emphasise
+  // the slide as a designed unit, without replacing the slide's own bg.
+  const themeBg = theme?.colors?.background ?? '#FFFFFF'
+  const isDarkTheme = /^#[0-9a-f]{6}$/i.test(themeBg) && (() => {
+    const h = themeBg.slice(1)
+    const r = parseInt(h.slice(0,2), 16)
+    const g = parseInt(h.slice(2,4), 16)
+    const b = parseInt(h.slice(4,6), 16)
+    return (0.2126*r + 0.7152*g + 0.0722*b) / 255 < 0.35
+  })()
 
   return (
     <div
@@ -673,27 +913,114 @@ export function SlidePreview({
         background,
         position:  'relative',
         overflow:  'hidden',
-        borderRadius: 6 * scale,
-        boxShadow: `0 ${4 * scale}px ${20 * scale}px rgba(0,0,0,0.18)`,
+        // Gamma uses ~24px rounded corners on slide cards.
+        borderRadius: (isDarkTheme ? 20 : 6) * scale,
+        // Crisper edge on dark themes — subtle inner highlight + outer shadow.
+        boxShadow: isDarkTheme
+          ? `0 ${8 * scale}px ${32 * scale}px rgba(0,0,0,0.55), inset 0 0 0 ${scale}px rgba(255,255,255,0.06)`
+          : `0 ${4 * scale}px ${20 * scale}px rgba(0,0,0,0.18)`,
         flexShrink: 0,
       }}
       onClick={() => onBlockClick?.('')}
     >
+
+      {/* Editor-only photographic backdrop (full-bleed image + dark overlay).
+          Exporters never render this — PPTX/PDF use `background` only. */}
+      {slide.editor_background?.image && (
+        <>
+          <img
+            src={slide.editor_background.image}
+            alt=""
+            draggable={false}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              pointerEvents: 'none',
+              userSelect: 'none',
+              zIndex: 0,
+            }}
+          />
+          {slide.editor_background.overlay && (
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              background: slide.editor_background.overlay,
+              pointerEvents: 'none',
+              zIndex: 1,
+            }} />
+          )}
+        </>
+      )}
+
+      {/* Gamma-style "01 / 09" slide progress at top-right. */}
       <div style={{
         position:   'absolute',
-        bottom:     10 * scale,
-        right:      16 * scale,
+        top:        18 * scale,
+        right:      24 * scale,
         fontSize:   11 * scale,
-        color:      'rgba(255,255,255,0.28)',
-        fontFamily: 'Inter, sans-serif',
-        zIndex:     10,
+        color:      isDarkTheme ? 'rgba(255,255,255,0.45)' : 'rgba(15,23,42,0.45)',
+        fontFamily: '"Inter Tight", Inter, sans-serif',
         fontWeight: 600,
+        letterSpacing: '0.08em',
+        zIndex:     10,
         pointerEvents: 'none',
       }}>
-        {slide.order}
+        {`${String(slide.order).padStart(2, '0')}${totalSlides ? ` / ${String(totalSlides).padStart(2, '0')}` : ''}`}
       </div>
 
-      {slide.blocks.map((block) => {
+      {/* Deck-title footer at bottom-left — subtle editorial chrome. */}
+      {deckTitle && (
+        <div style={{
+          position:   'absolute',
+          bottom:     18 * scale,
+          left:       24 * scale,
+          fontSize:   10 * scale,
+          color:      isDarkTheme ? 'rgba(255,255,255,0.32)' : 'rgba(15,23,42,0.40)',
+          fontFamily: '"Inter Tight", Inter, sans-serif',
+          fontWeight: 500,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase' as const,
+          maxWidth: (W - 100) * scale,
+          overflow: 'hidden',
+          whiteSpace: 'nowrap',
+          textOverflow: 'ellipsis',
+          zIndex: 10,
+          pointerEvents: 'none',
+        }}>
+          {deckTitle}
+        </div>
+      )}
+
+      {/* Subtle film-grain texture on dark themes — prevents flat-color look,
+          common touch in premium editorial UIs. Pure SVG noise, no asset
+          required. Very low opacity so it reads as texture not pattern. */}
+      {isDarkTheme && (
+        <svg
+          aria-hidden
+          style={{
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            opacity: 0.04,
+            mixBlendMode: 'overlay',
+            pointerEvents: 'none',
+            zIndex: 1,
+          }}
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <filter id="grain">
+            <feTurbulence type="fractalNoise" baseFrequency="0.95" numOctaves="2" seed="3" />
+            <feColorMatrix values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.6 0" />
+          </filter>
+          <rect width="100%" height="100%" filter="url(#grain)" />
+        </svg>
+      )}
+
+      {(slide.blocks ?? []).map((block) => {
         const isEditing  = editingBlockId === block.id
         const isSelected = selectedBlockId === block.id
 

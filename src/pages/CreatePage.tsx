@@ -116,7 +116,10 @@ export function CreatePage() {
     setStreamProgress({ step: 'Starting…', done: 0, total: slideCount, preview: [] })
 
     try {
-      const response = await generationApi.generateStream(prompt, slideCount, file, url, images, level, outline)
+      // Pass the user's selected theme preset id through to the backend so
+      // it can pick the matching DB theme (e.g. "gamma-dark" -> "Gamma Dark").
+      const themeIdForBackend = presetIdOverride || chosenPresetId || undefined
+      const response = await generationApi.generateStream(prompt, slideCount, file, url, images, level, outline, themeIdForBackend)
       if (!response.ok || !response.body) {
         const text = await response.text().catch(() => '')
         throw new Error(text || `Stream failed (${response.status})`)
@@ -168,9 +171,28 @@ export function CreatePage() {
             const slideIdx = data.index
             const imgBlock = data.block
             if (collected[slideIdx] && imgBlock) {
+              // Full-bleed background images (deck-bg-* or title img sized
+              // to the full canvas) must render BEHIND every other block,
+              // so insert at index 0. Other illustrations append normally.
+              const pos = imgBlock.position || {}
+              const isFullBleed =
+                pos.x === 0 && pos.y === 0 && pos.w >= 1200 && pos.h >= 680
+              const isDeckBg = String(imgBlock.id || '').startsWith('deck-bg-')
+              // When the deck-wide bg lands on a slide, strip the decorative
+              // split_panel left-panel/panel-dot blocks — otherwise they sit
+              // as a solid rectangle on top of the wavy backdrop and look
+              // like empty broken panels.
+              const existing = (isFullBleed || isDeckBg)
+                ? collected[slideIdx].blocks.filter(
+                    (b: any) => b?.id !== 'left-panel' && b?.id !== 'panel-dot'
+                  )
+                : collected[slideIdx].blocks
+              const nextBlocks = (isFullBleed || isDeckBg)
+                ? [imgBlock, ...existing]
+                : [...existing, imgBlock]
               collected[slideIdx] = {
                 ...collected[slideIdx],
-                blocks: [...collected[slideIdx].blocks, imgBlock],
+                blocks: nextBlocks,
               }
               setSlides([...collected])
             }
@@ -324,9 +346,28 @@ export function CreatePage() {
             const slideIdx = data.index
             const imgBlock = data.block
             if (collected[slideIdx] && imgBlock) {
+              // Full-bleed background images (deck-bg-* or title img sized
+              // to the full canvas) must render BEHIND every other block,
+              // so insert at index 0. Other illustrations append normally.
+              const pos = imgBlock.position || {}
+              const isFullBleed =
+                pos.x === 0 && pos.y === 0 && pos.w >= 1200 && pos.h >= 680
+              const isDeckBg = String(imgBlock.id || '').startsWith('deck-bg-')
+              // When the deck-wide bg lands on a slide, strip the decorative
+              // split_panel left-panel/panel-dot blocks — otherwise they sit
+              // as a solid rectangle on top of the wavy backdrop and look
+              // like empty broken panels.
+              const existing = (isFullBleed || isDeckBg)
+                ? collected[slideIdx].blocks.filter(
+                    (b: any) => b?.id !== 'left-panel' && b?.id !== 'panel-dot'
+                  )
+                : collected[slideIdx].blocks
+              const nextBlocks = (isFullBleed || isDeckBg)
+                ? [imgBlock, ...existing]
+                : [...existing, imgBlock]
               collected[slideIdx] = {
                 ...collected[slideIdx],
-                blocks: [...collected[slideIdx].blocks, imgBlock],
+                blocks: nextBlocks,
               }
               setSlides([...collected])
             }
@@ -379,8 +420,15 @@ export function CreatePage() {
       setEditingBlockId(null)
       return
     }
-    setSelectedBlockId(blockId)
-    setEditingBlockId(null)
+    // Click selected block again → edit inline (Gamma pattern).
+    setSelectedBlockId((prevSel) => {
+      if (prevSel === blockId) {
+        setEditingBlockId(blockId)
+      } else {
+        setEditingBlockId(null)
+      }
+      return blockId
+    })
   }, [])
 
   const handleBlockDoubleClick = useCallback((blockId: string) => {
@@ -564,7 +612,7 @@ export function CreatePage() {
 
   // Fixed scale — doesn't jump when panel opens/closes
   const availableW = window.innerWidth - LEFT_W - RIGHT_W - CANVAS_PAD
-  const previewScale = Math.min(Math.max(availableW / 1280, 0.35), 0.88)
+  const previewScale = Math.min(Math.max(availableW / 1280, 0.35), 1.0)
 
   return (
     <div className="flex flex-col h-screen overflow-hidden" style={{ background: '#0b1120' }}>
@@ -639,13 +687,13 @@ export function CreatePage() {
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Canvas area */}
           <div
-            className="flex-1 flex items-center justify-center relative"
+            className="flex-1 flex items-start justify-center relative pt-8"
             style={{ background: '#070d1a' }}
             onClick={() => { setSelectedBlockId(null); setEditingBlockId(null) }}
           >
             {/* Slide label */}
             <div
-              className="absolute top-4 left-1/2 -translate-x-1/2 text-[11px] font-medium px-3 py-1 rounded-full"
+              className="absolute top-2 left-1/2 -translate-x-1/2 text-[11px] font-medium px-3 py-1 rounded-full z-10"
               style={{ background: 'rgba(255,255,255,0.05)', color: '#475569' }}
             >
               Slide {selectedSlideIndex + 1} of {slides.length}
@@ -660,6 +708,13 @@ export function CreatePage() {
               onBlockClick={handleBlockClick}
               onBlockDoubleClick={handleBlockDoubleClick}
               onBlockContentChange={handleBlockContentChange}
+              totalSlides={slides.length}
+              deckTitle={
+                (slides[0]?.blocks?.find?.((b) => b.type === 'title' || b.type === 'heading')?.content || '')
+                  .split('\n')[0]
+                  .trim()
+                  || undefined
+              }
             />
           </div>
 

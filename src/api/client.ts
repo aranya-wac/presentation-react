@@ -154,6 +154,7 @@ export const generationApi = {
     images?: File[],
     level?: 'simple' | 'advanced',
     outline?: Array<{ order: number; type: string; title: string }>,
+    themeId?: string,
   ) => {
     const form = new FormData()
     form.append('prompt', prompt)
@@ -165,6 +166,7 @@ export const generationApi = {
     }
     if (level) form.append('level', level)
     if (outline?.length) form.append('outline_json', JSON.stringify(outline))
+    if (themeId) form.append('theme_id', themeId)
     const token = localStorage.getItem('access_token')
     return fetch(`${BASE_URL}/api/v1/generate/stream`, {
       method: 'POST',
