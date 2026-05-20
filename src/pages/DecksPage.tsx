@@ -62,7 +62,6 @@ export function DecksPage() {
       <div className="px-12 pt-12 pb-20 max-w-[1280px] mx-auto">
         <div className="flex items-end justify-between mb-10 flex-wrap gap-4">
           <div>
-            <p className="eyebrow mb-3">— Home</p>
             <h1
               className="font-serif leading-[1.05] tracking-tighter text-[34px] md:text-[44px]"
               style={{ color: 'var(--ink-strong)' }}
@@ -111,7 +110,7 @@ export function DecksPage() {
             >
               A blank page,
               <br />
-              <span className="font-serif-italic" style={{ color: 'var(--accent)' }}>waiting.</span>
+              <span style={{ color: 'var(--accent)' }}>waiting.</span>
             </p>
             <p
               className="text-[14px] mb-7 max-w-sm mx-auto leading-relaxed"
@@ -179,10 +178,32 @@ function DeckCard({
   }, [])
 
   return (
-    <div className="group">
+    <div
+      className="group cursor-pointer"
+      onMouseDown={(e) => {
+        // Skip when the press starts on the menu button or its dropdown — those
+        // children call stopPropagation, but we also guard here so that even
+        // if their handler doesn't fire (slow render, etc.) we don't open.
+        const target = e.target as HTMLElement
+        if (target.closest('[data-deck-menu]')) return
+        onOpen()
+      }}
+      onClick={(e) => {
+        const target = e.target as HTMLElement
+        if (target.closest('[data-deck-menu]')) return
+        onOpen()
+      }}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onOpen()
+        }
+      }}
+    >
       <div
-        onClick={onOpen}
-        className="relative aspect-[16/9] rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 ease-out"
+        className="relative aspect-[16/9] rounded-2xl overflow-hidden transition-all duration-300 ease-out"
         style={{
           background: 'var(--paper-2)', border: '1px solid var(--line)',
           boxShadow: '0 1px 1px rgba(15,14,12,0.06), 0 4px 14px -4px rgba(15,14,12,0.10)',
@@ -226,7 +247,7 @@ function DeckCard({
 
       <div className="pt-4 px-1 flex items-start justify-between gap-3">
         <button
-          onClick={onOpen}
+          onClick={(e) => { e.stopPropagation(); onOpen() }}
           className="min-w-0 flex-1 text-left cursor-pointer"
         >
           <p
@@ -258,7 +279,7 @@ function DeckCard({
           </div>
         </button>
 
-        <div className="relative flex-shrink-0">
+        <div className="relative flex-shrink-0" data-deck-menu>
           <button
             onClick={(e) => { e.stopPropagation(); onToggleMenu() }}
             className="w-8 h-8 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
@@ -281,7 +302,7 @@ function DeckCard({
               onClick={(e) => e.stopPropagation()}
             >
               <button
-                onClick={() => { onOpen(); onCloseMenu() }}
+                onClick={(e) => { e.stopPropagation(); onOpen(); onCloseMenu() }}
                 className="w-full text-left px-3.5 py-2 text-[13px] transition-colors"
                 style={{ color: 'var(--ink)' }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-2)')}
@@ -290,7 +311,7 @@ function DeckCard({
                 Open
               </button>
               <button
-                onClick={() => { onOpen(); onCloseMenu() }}
+                onClick={(e) => { e.stopPropagation(); onOpen(); onCloseMenu() }}
                 className="w-full text-left px-3.5 py-2 text-[13px] transition-colors flex items-center gap-2"
                 style={{ color: 'var(--ink)' }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--surface-2)')}
@@ -300,7 +321,7 @@ function DeckCard({
                 Edit slides
               </button>
               <button
-                onClick={onDelete}
+                onClick={(e) => { e.stopPropagation(); onDelete() }}
                 className="w-full text-left px-3.5 py-2 text-[13px] transition-colors"
                 style={{ color: 'var(--accent)' }}
                 onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--accent-soft)')}

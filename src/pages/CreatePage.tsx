@@ -1,7 +1,7 @@
 import { useMemo, useState, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ChevronLeft, ChevronRight, Play, Save } from 'lucide-react'
-import { generationApi, presentationsApi, BASE_URL } from '../api/client'
+import { generationApi, presentationsApi, templatesApi, BASE_URL } from '../api/client'
 import type { Slide, Theme, Block } from '../types'
 import { PromptScreen } from '../components/Create/PromptScreen'
 import { TopicScreen, type ResearchDepth } from '../components/Create/TopicScreen'
@@ -69,9 +69,34 @@ export function CreatePage() {
     level?: 'simple' | 'advanced',
     reviewOutline?: boolean,
     themePresetId?: string,
+    templateId?: string | null,
   ) => {
     const normalizedLevel = level ?? 'simple'
     if (themePresetId) setChosenPresetId(themePresetId)
+
+    // Template-based generation: when the user picked a template AND there's
+    // no file/url/images attachment, route through the template generation
+    // API so the deck adopts the template's design. Attachments aren't
+    // supported by that endpoint, so they fall through to the regular flow.
+    if (templateId && !file && !url && (!images || images.length === 0)) {
+      setPhase('generating')
+      setError(null)
+      setStreamProgress({ step: 'Generating from template…', done: 0, total: slideCount, preview: [] })
+      try {
+        const res = await templatesApi.generateFromPrompt(templateId, prompt, undefined, slideCount)
+        const newId = res.data?.id
+        if (newId) {
+          navigate(`/presentations/${newId}`)
+          return
+        }
+        throw new Error('Template generation did not return a presentation id.')
+      } catch (e: any) {
+        setError(e?.response?.data?.detail ?? e?.message ?? 'Template generation failed.')
+        setStreamProgress(null)
+        setPhase('prompt')
+        return
+      }
+    }
 
     // Outline-first flow: fetch the outline, show review screen, then continue.
     if (reviewOutline) {

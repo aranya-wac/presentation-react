@@ -269,7 +269,7 @@ function renderBlock(block: Block, ctx: RenderCtx) {
         key={block.id}
         style={{
           ...baseStyle,
-          background:   s.background_color || 'rgba(255,255,255,0.04)',
+          background:   s.background_color || (theme?.colors.background ?? 'rgba(255,255,255,0.04)'),
           borderRadius: 12 * scale,
           padding:      8 * scale,
         }}
@@ -287,7 +287,14 @@ function renderBlock(block: Block, ctx: RenderCtx) {
 
   // ── Panel block ───────────────────────────────────────────────────────
   if (block.type === 'panel') {
-    const grad = s.background_color || `linear-gradient(160deg, #0F172A 0%, #1E293B 100%)`
+    // Fallback gradient is derived from the current theme so that switching
+    // theme actually changes the panel background. The previous hardcoded
+    // dark gradient persisted across light/dark switches and made theme
+    // changes appear to have no effect on panel-heavy template slides.
+    const themeFallback = theme
+      ? `linear-gradient(160deg, ${theme.colors.background} 0%, ${theme.colors.primary ?? theme.colors.accent} 100%)`
+      : `linear-gradient(160deg, #0F172A 0%, #1E293B 100%)`
+    const grad = s.background_color || themeFallback
     return (
       <div key={block.id} style={{ ...baseStyle, background: grad, borderRadius: 0 }} {...handlers} />
     )
@@ -372,15 +379,7 @@ function renderBlock(block: Block, ctx: RenderCtx) {
       //     reads through.
       //   - deck-wide bg on content slides (id starts "deck-bg-"): stronger
       //     uniform darkness so cards/text stay readable on top.
-      const isDeckBg = String(block.id || '').startsWith('deck-bg-')
-      // Overlay color matches the theme's lightness so the existing text
-      // colors stay readable: dark themes get a dark wash, light themes
-      // get a pale wash.
-      const overlay = isDeckBg
-        ? (isDarkTheme ? 'rgba(0,0,0,0.62)' : 'rgba(255,255,255,0.55)')
-        : (isDarkTheme
-            ? 'linear-gradient(180deg, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.4) 60%, rgba(0,0,0,0.55) 100%)'
-            : 'linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.35) 60%, rgba(255,255,255,0.5) 100%)')
+      const overlay = 'transparent'
       return (
         <div
           key={block.id}
@@ -656,7 +655,7 @@ function renderBlock(block: Block, ctx: RenderCtx) {
           flexDirection:  'column',
           alignItems:     'center',
           justifyContent: 'center',
-          background:     s.background_color || 'rgba(255,255,255,0.08)',
+          background:     s.background_color || (theme?.colors.background ?? 'rgba(255,255,255,0.08)'),
           borderRadius:   16 * scale,
           border:         `${scale}px solid rgba(255,255,255,0.12)`,
           padding:        `${16 * scale}px`,

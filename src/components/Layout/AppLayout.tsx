@@ -2,7 +2,6 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import {
   LayoutTemplate,
   Library,
-  Search,
   Home,
   Settings,
   ChevronsLeft,
@@ -11,6 +10,7 @@ import {
   FolderKanban,
   Keyboard,
   Sparkles,
+  Upload,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useAuthStore } from '../../store/authStore'
@@ -18,6 +18,7 @@ import { useToast } from '../ui/Toast'
 import { usageApi, type UsageInfo } from '../../api/client'
 import { KeyboardShortcutsModal } from './KeyboardShortcutsModal'
 import { ThemeToggle } from './ThemeToggle'
+import { ImportModal } from '../Dashboard/ImportModal'
 
 // ── Sidebar ──────────────────────────────────────────────────────────────────
 function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => void }) {
@@ -27,6 +28,7 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
   const toast = useToast()
   const [usage, setUsage] = useState<UsageInfo | null>(null)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
 
   // Load usage when sidebar mounts and when route changes (to catch new
   // presentations created elsewhere in the app).
@@ -228,21 +230,23 @@ function Sidebar({ collapsed, onToggle }: { collapsed: boolean; onToggle: () => 
         </button>
 
         <button
-          className="w-full flex items-center gap-2 px-3 h-8 rounded-lg text-[12.5px] transition-colors"
-          style={{ background: 'rgba(0,0,0,0.04)', color: 'var(--ink-muted)' }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(0,0,0,0.07)')}
-          onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(0,0,0,0.04)')}
+          onClick={() => setImportOpen(true)}
+          className="w-full h-9 px-3 rounded-xl text-[13px] font-semibold flex items-center gap-2 transition-all"
+          style={{
+            background: 'var(--surface)',
+            color: 'var(--ink-strong)',
+            border: '1px solid var(--line)',
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(10,9,7,0.06)')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--surface)')}
         >
-          <Search size={12} />
-          <span className="flex-1 text-left">Search</span>
-          <span
-            className="font-mono text-[10.5px]"
-            style={{ color: 'var(--ink-faint)' }}
-          >
-            ⌘K
-          </span>
+          <Upload size={13} strokeWidth={2.5} />
+          <span className="flex-1 text-left">Import</span>
         </button>
+
       </div>
+
+      {importOpen && <ImportModal onClose={() => setImportOpen(false)} />}
 
       {/* Section label */}
       <p

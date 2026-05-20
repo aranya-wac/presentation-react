@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Paperclip, Sparkles, X, Loader2, ArrowLeft, Mic, Square, Link2 } from 'lucide-react'
-import { ThemePicker } from './ThemePicker'
+import { TemplateSidePanel } from './TemplateSidePanel'
 
 export type DeckLevel = 'simple' | 'advanced'
 
@@ -15,6 +15,7 @@ interface Props {
     level?: DeckLevel,
     reviewOutline?: boolean,
     themePresetId?: string,
+    templateId?: string | null,
   ) => void
   isGenerating: boolean
   /** Optional initial prompt — used when the user typed something on the
@@ -195,7 +196,8 @@ export function PromptScreen({ onGenerate, isGenerating, defaultPrompt }: Props)
   const [images, setImages] = useState<File[]>([])
   const imagesRef = useRef<HTMLInputElement>(null)
   const [level, setLevel] = useState<DeckLevel>('simple')
-  const [themePresetId, setThemePresetId] = useState<string>('vortex')
+  const [themePresetId] = useState<string>('vortex')
+  const [templateId, setTemplateId] = useState<string | null>(null)
 
   const [urlOpen, setUrlOpen] = useState(false)
   const [urlValue, setUrlValue] = useState('')
@@ -316,6 +318,7 @@ export function PromptScreen({ onGenerate, isGenerating, defaultPrompt }: Props)
       level,
       false,             // outline review removed for perf
       themePresetId,
+      templateId,
     )
   }
 
@@ -381,7 +384,7 @@ export function PromptScreen({ onGenerate, isGenerating, defaultPrompt }: Props)
             >
               What's the
               <br />
-              <span className="font-serif-italic" style={{ color: 'var(--accent)' }}>deck about?</span>
+              <span style={{ color: 'var(--accent)' }}>deck about?</span>
             </h1>
             <p
               className="text-[15px] mt-6 max-w-md mx-auto leading-relaxed"
@@ -525,14 +528,6 @@ export function PromptScreen({ onGenerate, isGenerating, defaultPrompt }: Props)
                 </p>
               </div>
             )}
-
-            {/* Theme picker — premium chip browser with hover preview + AI suggestions */}
-            <ThemePicker
-              selectedId={themePresetId}
-              onSelect={setThemePresetId}
-              prompt={prompt}
-              disabled={isGenerating}
-            />
 
             {/* Toolbar */}
             <div
@@ -809,7 +804,6 @@ export function PromptScreen({ onGenerate, isGenerating, defaultPrompt }: Props)
                   key={t.id}
                   onClick={() => {
                     setPrompt(t.prompt)
-                    setThemePresetId(t.recommendedTheme)
                     setLevel(t.recommendedLevel)
                     setSlideCount(t.slides)
                   }}
@@ -935,6 +929,19 @@ export function PromptScreen({ onGenerate, isGenerating, defaultPrompt }: Props)
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Right-side template panel — docks to top-right on lg+, falls back to
+          inline below the prompt content on smaller screens so it's still
+          reachable on tablets and phones. */}
+      <div
+        className="w-full max-w-[720px] mx-auto px-6 mb-10 lg:max-w-none lg:mx-0 lg:px-0 lg:mb-0 lg:absolute lg:right-6 lg:top-20 lg:w-[280px] xl:w-[300px] lg:z-20"
+      >
+        <TemplateSidePanel
+          selectedId={templateId}
+          onSelect={setTemplateId}
+          disabled={isGenerating}
+        />
       </div>
     </div>
   )
