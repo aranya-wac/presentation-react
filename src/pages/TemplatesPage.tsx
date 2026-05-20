@@ -4,9 +4,8 @@ import { templatesApi, presentationsApi, BASE_URL } from '../api/client'
 import { AppLayout } from '../components/Layout/AppLayout'
 import { SlidePreview } from '../components/Presentation/SlidePreview'
 import { Button } from '../components/ui/Button'
-import { Chip } from '../components/ui/Chip'
 import type { PreviewResponse, Slide, TemplateListItem, Theme } from '../types'
-import { Loader2, Sparkles, X, Copy, Search, FileText, ArrowUpRight, Plus, Trash2 } from 'lucide-react'
+import { Loader2, Sparkles, X, Copy, Search, FileText, ArrowUpRight, Trash2 } from 'lucide-react'
 
 const SLIDE_W = 1280
 const SLIDE_H = 720
@@ -334,8 +333,6 @@ function SlidePreviewCard({
   )
 }
 
-type SourceFilter = 'all' | 'mine' | 'builtin'
-
 // ── Templates page ──────────────────────────────────────────────────────────
 export function TemplatesPage() {
   const navigate = useNavigate()
@@ -343,16 +340,14 @@ export function TemplatesPage() {
   const [loading, setLoading] = useState(true)
   const [previewing, setPreviewing] = useState<TemplateListItem | null>(null)
   const [search, setSearch] = useState('')
-  const [activeCategory, setActiveCategory] = useState<string>('all')
-  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('all')
 
   useEffect(() => {
     setLoading(true)
     templatesApi
-      .list({ source: sourceFilter })
+      .list({ source: 'all' })
       .then((r) => setTemplates(r.data))
       .finally(() => setLoading(false))
-  }, [sourceFilter])
+  }, [])
 
   const openTemplate = (t: TemplateListItem) => {
     // Wizard-built templates use the simpler prompt-only flow.
@@ -382,16 +377,9 @@ export function TemplatesPage() {
     }
   }
 
-  const categories = useMemo(() => {
-    const set = new Set<string>()
-    templates.forEach((t) => t.category && set.add(t.category))
-    return ['all', ...Array.from(set)]
-  }, [templates])
-
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return templates.filter((t) => {
-      if (activeCategory !== 'all' && t.category !== activeCategory) return false
       if (!q) return true
       return (
         t.name.toLowerCase().includes(q) ||
@@ -399,21 +387,20 @@ export function TemplatesPage() {
         (t.tags ?? []).some((tag) => tag.toLowerCase().includes(q))
       )
     })
-  }, [templates, search, activeCategory])
+  }, [templates, search])
 
   return (
     <AppLayout>
       <div className="px-12 pt-12 pb-20 max-w-[1280px] mx-auto">
         {/* Editorial hero */}
         <div className="mb-14 max-w-4xl">
-          <p className="eyebrow mb-4">— The library</p>
           <h1
             className="font-serif leading-[1.0] tracking-tightest text-[40px] md:text-[56px]"
             style={{ color: 'var(--ink-strong)' }}
           >
-            Premium decks,
+            Premium presentations,
             <br />
-            <span className="font-serif-italic" style={{ color: 'var(--accent)' }}>half-written.</span>
+            <span style={{ color: 'var(--accent)' }}>ready to launch.</span>
           </h1>
           <p
             className="text-[15.5px] mt-7 max-w-xl leading-relaxed"
@@ -446,47 +433,6 @@ export function TemplatesPage() {
               onBlur={(e) => (e.currentTarget.style.borderColor = 'var(--line)')}
             />
           </div>
-          <div className="flex items-center gap-3">
-            <p className="eyebrow">{filtered.length} of {templates.length}</p>
-            <Button
-              variant="primary"
-              onClick={() => navigate('/templates/new')}
-              leadingIcon={<Plus size={13} />}
-            >
-              Create template
-            </Button>
-          </div>
-        </div>
-
-        {/* Source + Category chips, single row (separated by a divider) */}
-        <div className="flex items-center gap-1 mb-12 flex-wrap">
-          {([
-            { value: 'all', label: 'All' },
-            { value: 'mine', label: 'Mine' },
-            { value: 'builtin', label: 'Built-in' },
-          ] as const).map((opt) => (
-            <Chip
-              key={`src-${opt.value}`}
-              active={sourceFilter === opt.value}
-              onClick={() => setSourceFilter(opt.value)}
-            >
-              {opt.label}
-            </Chip>
-          ))}
-          <span
-            aria-hidden
-            className="mx-2 h-5 w-px"
-            style={{ background: 'var(--line)' }}
-          />
-          {categories.map((cat) => (
-            <Chip
-              key={`cat-${cat}`}
-              active={activeCategory === cat}
-              onClick={() => setActiveCategory(cat)}
-            >
-              {cat === 'all' ? 'All' : cat}
-            </Chip>
-          ))}
         </div>
 
         {/* Grid */}

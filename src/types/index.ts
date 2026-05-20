@@ -122,6 +122,8 @@ export interface Block {
   styling: Styling
   chart_type?: ChartType
   chart_data?: ChartDataPoint[]
+  /** Optional Lucide-React icon name for card blocks (Gamma-style). */
+  icon?: string
 }
 
 export interface SlideBackground {
@@ -129,10 +131,20 @@ export interface SlideBackground {
   value: string
 }
 
+/** Editor-only photographic backdrop. Exporters ignore this — PPTX/PDF/HTML
+ * keep using `background` (color/gradient). The editor renders this as a
+ * full-bleed layer beneath all blocks, with `overlay` painted on top of the
+ * image for legibility. */
+export interface EditorBackground {
+  image: string
+  overlay?: string | null
+}
+
 export interface Slide {
   order: number
   type: string
   background?: SlideBackground
+  editor_background?: EditorBackground
   blocks: Block[]
   notes?: string
 }

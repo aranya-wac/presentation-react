@@ -8,9 +8,32 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:wght@500;700;900&family=Montserrat:wght@500;700;800&family=Poppins:wght@500;600;700;800&family=Open+Sans:wght@400;500;600&family=Lato:wght@400;700&family=Newsreader:opsz,wght@6..72,400;6..72,600;6..72,800&family=Space+Grotesk:wght@500;600;700&family=Sora:wght@500;700;800&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Inter+Tight:wght@500;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Playfair+Display:wght@500;700;900&family=Montserrat:wght@500;700;800&family=Poppins:wght@500;600;700;800&family=Open+Sans:wght@400;500;600&family=Lato:wght@400;700&family=Newsreader:opsz,wght@6..72,400;6..72,600;6..72,800&family=Space+Grotesk:wght@500;600;700&family=Sora:wght@500;700;800&display=swap"
       rel="stylesheet"
     />
+    <style>
+      /* Gamma-level typography defaults: enable kerning, ligatures, optical
+         sizing, and antialiasing globally. Without these, even premium fonts
+         like Inter render with default browser kerning which looks "rough"
+         at large heading sizes. */
+      :root {
+        font-feature-settings: "kern" 1, "liga" 1, "calt" 1, "ss01" 1, "cv01" 1, "cv11" 1;
+        font-optical-sizing: auto;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      /* Slide canvas text: extra-tight letter-spacing on heavy headings
+         (Gamma uses ~-0.02em on 56-72pt headlines). */
+      .slide-heading {
+        letter-spacing: -0.025em;
+        line-height: 1.05;
+      }
+      .slide-body {
+        letter-spacing: -0.005em;
+        line-height: 1.55;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

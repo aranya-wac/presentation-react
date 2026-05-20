@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Paperclip, Sparkles, X, Loader2, ArrowLeft, Mic, Square, Link2 } from 'lucide-react'
-import { ThemePicker } from './ThemePicker'
+import { TemplateSidePanel } from './TemplateSidePanel'
 
 export type DeckLevel = 'simple' | 'advanced'
 
@@ -15,6 +15,7 @@ interface Props {
     level?: DeckLevel,
     reviewOutline?: boolean,
     themePresetId?: string,
+    templateId?: string | null,
   ) => void
   isGenerating: boolean
   /** Optional initial prompt — used when the user typed something on the
@@ -45,10 +46,10 @@ const TEMPLATES: TemplateCard[] = [
     description: 'Problem, solution, traction, ask. Series A to C ready.',
     prompt:
       'A 10-slide Series A pitch for a B2B SaaS startup. Include market opportunity, product, traction metrics, competitive landscape, roadmap, and the ask.',
-    recommendedTheme: 'stratos',
+    recommendedTheme: 'gamma-midnight',
     recommendedLevel: 'advanced',
     slides: 10,
-    preview: { bg: '#0f172a', ink: '#e2e8f0', accent: '#38bdf8' },
+    preview: { bg: '#050B1F', ink: '#E8EEFF', accent: '#7FB8FF' },
   },
   {
     id: 'board-update',
@@ -57,10 +58,10 @@ const TEMPLATES: TemplateCard[] = [
     description: 'Quarterly performance, KPIs, strategic priorities.',
     prompt:
       'Q3 2026 board update for an early-stage company. Cover revenue, customer growth, key wins, headcount, runway, and Q4 priorities.',
-    recommendedTheme: 'editorial',
+    recommendedTheme: 'gamma-ivory',
     recommendedLevel: 'advanced',
     slides: 8,
-    preview: { bg: '#faf8f3', ink: '#1c1b17', accent: '#8b1a1a' },
+    preview: { bg: '#FBF8F1', ink: '#1A2440', accent: '#BF8A3B' },
   },
   {
     id: 'product-launch',
@@ -69,10 +70,10 @@ const TEMPLATES: TemplateCard[] = [
     description: 'Hero story, features, positioning, launch timeline.',
     prompt:
       'Product launch deck for a new mobile app. Include the problem we solve, key features, target users, pricing, launch timeline, and marketing plan.',
-    recommendedTheme: 'brutalist',
+    recommendedTheme: 'gamma-sunset',
     recommendedLevel: 'advanced',
     slides: 8,
-    preview: { bg: '#fff9e6', ink: '#000000', accent: '#ffd60a' },
+    preview: { bg: '#0D0604', ink: '#FFEEDD', accent: '#FF8C42' },
   },
   {
     id: 'qbr',
@@ -81,10 +82,10 @@ const TEMPLATES: TemplateCard[] = [
     description: 'Account health, usage, outcomes, expansion path.',
     prompt:
       'Customer success quarterly business review. Cover account health, product adoption, key outcomes achieved, support escalations, and the renewal/expansion plan.',
-    recommendedTheme: 'mercury',
+    recommendedTheme: 'gamma-slate',
     recommendedLevel: 'simple',
     slides: 7,
-    preview: { bg: '#f9fafb', ink: '#111827', accent: '#6b7280' },
+    preview: { bg: '#F7F7F7', ink: '#1A1A1A', accent: '#A8A8A8' },
   },
   {
     id: 'team-allhands',
@@ -93,10 +94,10 @@ const TEMPLATES: TemplateCard[] = [
     description: 'Wins, OKR progress, what changed, what is next.',
     prompt:
       'Monthly engineering team all-hands. Cover wins from this month, OKR progress, team headcount changes, upcoming releases, and what we are stopping doing.',
-    recommendedTheme: 'forest',
+    recommendedTheme: 'gamma-sage',
     recommendedLevel: 'simple',
     slides: 6,
-    preview: { bg: '#0f2419', ink: '#f5f1e8', accent: '#10b981' },
+    preview: { bg: '#081A11', ink: '#E8F2EC', accent: '#7FCBA0' },
   },
   {
     id: 'workshop',
@@ -105,10 +106,10 @@ const TEMPLATES: TemplateCard[] = [
     description: 'Concept → example → exercise → recap.',
     prompt:
       'Workshop deck teaching the fundamentals of prompt engineering for product managers. Include intro, 4 core concepts with examples, hands-on exercises, and a recap.',
-    recommendedTheme: 'nova',
+    recommendedTheme: 'gamma-aurora',
     recommendedLevel: 'simple',
     slides: 10,
-    preview: { bg: '#f8f4ff', ink: '#4c1d95', accent: '#7c3aed' },
+    preview: { bg: '#0A0418', ink: '#F5EBFF', accent: '#B794F6' },
   },
 ]
 
@@ -195,7 +196,8 @@ export function PromptScreen({ onGenerate, isGenerating, defaultPrompt }: Props)
   const [images, setImages] = useState<File[]>([])
   const imagesRef = useRef<HTMLInputElement>(null)
   const [level, setLevel] = useState<DeckLevel>('simple')
-  const [themePresetId, setThemePresetId] = useState<string>('vortex')
+  const [themePresetId] = useState<string>('vortex')
+  const [templateId, setTemplateId] = useState<string | null>(null)
 
   const [urlOpen, setUrlOpen] = useState(false)
   const [urlValue, setUrlValue] = useState('')
@@ -316,6 +318,7 @@ export function PromptScreen({ onGenerate, isGenerating, defaultPrompt }: Props)
       level,
       false,             // outline review removed for perf
       themePresetId,
+      templateId,
     )
   }
 
@@ -381,7 +384,7 @@ export function PromptScreen({ onGenerate, isGenerating, defaultPrompt }: Props)
             >
               What's the
               <br />
-              <span className="font-serif-italic" style={{ color: 'var(--accent)' }}>deck about?</span>
+              <span style={{ color: 'var(--accent)' }}>deck about?</span>
             </h1>
             <p
               className="text-[15px] mt-6 max-w-md mx-auto leading-relaxed"
@@ -525,14 +528,6 @@ export function PromptScreen({ onGenerate, isGenerating, defaultPrompt }: Props)
                 </p>
               </div>
             )}
-
-            {/* Theme picker — premium chip browser with hover preview + AI suggestions */}
-            <ThemePicker
-              selectedId={themePresetId}
-              onSelect={setThemePresetId}
-              prompt={prompt}
-              disabled={isGenerating}
-            />
 
             {/* Toolbar */}
             <div
@@ -809,7 +804,6 @@ export function PromptScreen({ onGenerate, isGenerating, defaultPrompt }: Props)
                   key={t.id}
                   onClick={() => {
                     setPrompt(t.prompt)
-                    setThemePresetId(t.recommendedTheme)
                     setLevel(t.recommendedLevel)
                     setSlideCount(t.slides)
                   }}
@@ -935,6 +929,19 @@ export function PromptScreen({ onGenerate, isGenerating, defaultPrompt }: Props)
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Right-side template panel — docks to top-right on lg+, falls back to
+          inline below the prompt content on smaller screens so it's still
+          reachable on tablets and phones. */}
+      <div
+        className="w-full max-w-[720px] mx-auto px-6 mb-10 lg:max-w-none lg:mx-0 lg:px-0 lg:mb-0 lg:absolute lg:right-6 lg:top-20 lg:w-[280px] xl:w-[300px] lg:z-20"
+      >
+        <TemplateSidePanel
+          selectedId={templateId}
+          onSelect={setTemplateId}
+          disabled={isGenerating}
+        />
       </div>
     </div>
   )

@@ -4,13 +4,13 @@ export type ThemeMode = 'light' | 'dark' | 'system'
 
 const STORAGE_KEY = 'wac:theme-mode'
 
-/** Read the stored preference once. Defaults to 'system' so first-time users
- *  match their OS without a flash. */
+/** Read the stored preference once. Defaults to 'light' so first-time users
+ *  get a predictable starting theme regardless of OS preference. */
 function readStored(): ThemeMode {
-  if (typeof window === 'undefined') return 'system'
+  if (typeof window === 'undefined') return 'light'
   const raw = localStorage.getItem(STORAGE_KEY)
   if (raw === 'light' || raw === 'dark' || raw === 'system') return raw
-  return 'system'
+  return 'light'
 }
 
 /** Resolve a mode (incl. "system") to the effective theme right now. */

@@ -6,7 +6,7 @@ import { SlidePreview } from '../components/Presentation/SlidePreview'
 import { Button } from '../components/ui/Button'
 import type { PresentationListItem, TemplateListItem } from '../types'
 import {
-  Upload, MoreHorizontal, Sparkles, ArrowUpRight,
+  MoreHorizontal, Sparkles, ArrowUpRight,
   LayoutGrid, ArrowDownToLine, Clock, Star,
 } from 'lucide-react'
 import { ImportModal } from '../components/Dashboard/ImportModal'
@@ -67,22 +67,6 @@ export function DashboardPage() {
         }}
       >
         <p className="eyebrow" style={{ color: 'var(--ink-faint)' }}>— Home</p>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="secondary"
-            onClick={() => setShowImport(true)}
-            leadingIcon={<Upload size={12} />}
-          >
-            Import
-          </Button>
-          <Button
-            variant="primary"
-            onClick={() => navigate('/create')}
-            leadingIcon={<Sparkles size={12} />}
-          >
-            New Presentation
-          </Button>
-        </div>
       </div>
 
       {/* ── Page content ────────────────────────────────────────────────────── */}
@@ -97,7 +81,7 @@ export function DashboardPage() {
               color: 'var(--ink-strong)',
             }}
           >
-            Create professional presentations <span className="font-serif-italic">faster.</span>
+            Create professional presentations <span>faster.</span>
           </h1>
           <p
             className="text-[14.5px] max-w-md leading-relaxed"
@@ -168,7 +152,7 @@ export function DashboardPage() {
               >
                 A blank page,
                 <br />
-                <span className="font-serif-italic" style={{ color: 'var(--ink-soft)' }}>waiting.</span>
+                <span style={{ color: 'var(--ink-soft)' }}>waiting.</span>
               </p>
               <p
                 className="text-[13.5px] mb-7 max-w-xs mx-auto leading-relaxed"
@@ -213,7 +197,7 @@ export function DashboardPage() {
           <section>
             <SectionHeader
               eyebrow="— Featured"
-              title="A starting point"
+              title="Available templates"
               icon={<Star size={18} strokeWidth={1.75} />}
               action={{ label: 'All templates', onClick: () => navigate('/templates') }}
             />
@@ -271,8 +255,30 @@ function SectionHeader({
       {action && (
         <button
           onClick={action.onClick}
-          className="text-[12.5px] font-medium flex items-center gap-1 group transition-opacity hover:opacity-50"
-          style={{ color: 'var(--ink-strong)' }}
+          className="text-[12.5px] font-semibold inline-flex items-center gap-1.5 group transition-all"
+          style={{
+            color: 'var(--ink-strong)',
+            background: 'var(--surface)',
+            border: '1px solid var(--line)',
+            borderRadius: 999,
+            padding: '8px 16px',
+            boxShadow: '0 1px 1px rgba(15,14,12,0.04)',
+            cursor: 'pointer',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'var(--ink-strong)'
+            e.currentTarget.style.color = 'var(--paper)'
+            e.currentTarget.style.borderColor = 'var(--ink-strong)'
+            e.currentTarget.style.boxShadow = '0 4px 12px -2px rgba(15,14,12,0.18)'
+            e.currentTarget.style.transform = 'translateY(-1px)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'var(--surface)'
+            e.currentTarget.style.color = 'var(--ink-strong)'
+            e.currentTarget.style.borderColor = 'var(--line)'
+            e.currentTarget.style.boxShadow = '0 1px 1px rgba(15,14,12,0.04)'
+            e.currentTarget.style.transform = 'translateY(0)'
+          }}
         >
           {action.label}
           <ArrowUpRight
@@ -343,7 +349,10 @@ function QuickAction({
         >
           {icon}
         </div>
-        <span className="eyebrow" style={{ color: 'var(--ink-faint)' }}>
+        <span
+          className="eyebrow transition-opacity duration-150 group-hover:opacity-0"
+          style={{ color: 'var(--ink-faint)' }}
+        >
           {label}
         </span>
       </div>

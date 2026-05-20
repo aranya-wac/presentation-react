@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { Loader2 } from 'lucide-react'
 import { presentationsApi, exportApi, themesApi, shareApi, imagesApi, generationApi } from '../api/client'
 import { SlidePreview } from '../components/Presentation/SlidePreview'
 import { PropertyPanel } from '../components/Presentation/SlideEditor'
@@ -44,11 +45,117 @@ function getCanvasBg(hex: string): string {
   return hex
 }
 
-function makeSlideOfKind(kind: SlideTemplateKind, order: number, theme: ThemePreset): Slide {
+// Block types whose `content` should be wiped to a placeholder when cloning
+// a slide as a blank starter — leaves the template chrome (badge, accent
+// shapes, footer text) intact while inviting the user to fill in fresh
+// title/body copy.
+const PLACEHOLDERS: Record<string, string> = {
+  title:    'New title',
+  heading:  'Section heading',
+  subtitle: 'Subtitle',
+  body:     'Add your content here.',
+  text:     'Add text',
+  bullet:   '• First point\n• Second point\n• Third point',
+  quote:    'Quotation goes here',
+  caption:  'Caption',
+  card:     'Card title\nCard body text',
+  stat:     '00',
+}
+
+/**
+ * Clone an existing slide as a blank starter — preserves block types,
+ * positions, styling, icons, chart shells, and the slide background, but
+ * wipes the text content of text-like blocks. The result reads as a
+ * "fresh slide" in the same design language as the source.
+ */
+function cloneSlideAsBlank(src: Slide, kind: SlideTemplateKind, order: number): Slide {
+  return {
+    ...src,
+    order,
+    type: kind,
+    blocks: src.blocks.map((b) => ({
+      ...b,
+      id: crypto.randomUUID(),
+      content: b.type in PLACEHOLDERS ? PLACEHOLDERS[b.type] : b.content,
+      // Strip chart data so the new chart block renders the empty state
+      // — the user picks their own data via the chart modal.
+      chart_data: b.type === 'chart' ? [] : b.chart_data,
+    })),
+  }
+}
+
+/**
+ * Pick the best donor slide in the deck for a given new-slide kind. We
+ * prefer an existing slide of the same `type`; failing that, an
+ * "anything-but-title" slide for content/agenda kinds, or a title-ish
+ * slide for the title kind. Returns undefined when nothing usable exists
+ * — caller falls back to the hardcoded layout.
+ */
+function findDonorSlide(slides: Slide[], kind: SlideTemplateKind): Slide | undefined {
+  if (kind === 'blank') return undefined
+  const exact = slides.find((s) => s.type === kind && s.blocks.length > 0)
+  if (exact) return exact
+  if (kind === 'title') {
+    return slides.find((s) =>
+      s.blocks.some((b) => b.type === 'title') && s.blocks.length > 0,
+    )
+  }
+  // content / agenda → first non-title slide with blocks
+  return slides.find((s) => s.type !== 'title' && s.blocks.length > 0)
+}
+
+function makeSlideOfKind(
+  kind: SlideTemplateKind,
+  order: number,
+  theme: ThemePreset,
+  inheritFrom?: Slide,
+  deck?: Slide[],
+): Slide {
+  // 1. If the deck already has a same-kind slide, clone its structure as
+  //    a blank starter so the new slide carries the template's chrome
+  //    (badge, accent rule, footer line, etc.) and just needs fresh text.
+  if (deck && kind !== 'blank') {
+    const donor = findDonorSlide(deck, kind)
+    if (donor) return cloneSlideAsBlank(donor, kind, order)
+  }
+
+  // 2. Blank slide → inherit the donor slide's full background AND
+  //    editor_background, PLUS any full-bleed decorative image blocks
+  //    (the AI often puts a sand-dune / silk pattern as an image block
+  //    sized to the slide, used as a de-facto backdrop). Without copying
+  //    those, the blank slide loses the deck's visual atmosphere even
+  //    though slide.background is correct.
+  if (kind === 'blank') {
+    const donor = inheritFrom ?? deck?.find((s) => s.background || s.editor_background || s.blocks.length > 0)
+    const decorativeBlocks = (donor?.blocks ?? []).filter((b) => {
+      if (b.type !== 'image') return false
+      const p = b.position
+      // "Full-bleed": covers ~90%+ of the 1280×720 canvas and starts near 0,0.
+      return p.x <= 40 && p.y <= 40 && p.w >= 1152 && p.h >= 648
+    }).map((b) => ({ ...b, id: crypto.randomUUID() }))
+
+    return {
+      order,
+      type: kind,
+      background: donor?.background ?? { type: 'color' as const, value: theme.colors.background },
+      editor_background: donor?.editor_background,
+      blocks: decorativeBlocks,
+    }
+  }
+
+  // 3. Fallback hardcoded layouts — used when the deck has no same-kind
+  //    donor (e.g. a fresh deck without any content slides yet). Skip
+  //    image backgrounds here because the hardcoded text layout assumes
+  //    a flat-ish canvas to read against.
+  const src = inheritFrom?.background
+  const inheritedBg = src && src.type !== 'image'
+    ? src
+    : { type: 'color' as const, value: theme.colors.background }
+
   const base: Pick<Slide, 'order' | 'type' | 'background'> = {
     order,
     type: kind,
-    background: { type: 'color', value: theme.colors.background },
+    background: inheritedBg,
   }
   const titleStyle: Styling = {
     font_family: theme.fonts.heading, font_size: 56, font_weight: 800,
@@ -196,6 +303,11 @@ export function PresentationPage() {
   // Keep slidesRef in sync so handleApplyTheme always has the latest slides
   useEffect(() => { slidesRef.current = slides }, [slides])
 
+  // Mirror activeTheme into a ref so async AI-restyle callbacks can check
+  // whether the user has switched themes again before they finished.
+  const activeThemeRef = useRef<ThemePreset>(getThemeById('vortex'))
+  useEffect(() => { activeThemeRef.current = activeTheme }, [activeTheme])
+
   // DB theme used as the canvas/preview backdrop (full theme object from API).
   const [dbTheme, setDbTheme] = useState<Theme | null>(null)
 
@@ -214,11 +326,42 @@ export function PresentationPage() {
       history.resetTo(r.data.slides)
       setLayouts((r.data as any).layouts ?? [])
 
+      // Restore the per-deck theme cache from localStorage so cross-session
+      // theme switching stays a cache hit. We key on a version (`v2`) so when
+      // the cache schema changes (e.g. backgrounds-on-theme-switch rules) we
+      // discard stale entries from older clients instead of rendering old
+      // photo backdrops.
+      try {
+        const raw = localStorage.getItem(`theme_cache_${id}_v2`)
+        if (raw) {
+          const parsed: Record<string, Slide[]> = JSON.parse(raw)
+          // Drop any cache entry that still carries the old photo backdrop
+          // or an image-type background — those entries pre-date the rule
+          // that theme switches strip old atmosphere. Dropping forces a
+          // fresh restyle next time the user visits that theme.
+          for (const key of Object.keys(parsed)) {
+            const stale = parsed[key].some((s) =>
+              !!s.editor_background?.image || s.background?.type === 'image'
+            )
+            if (stale) delete parsed[key]
+          }
+          themeCacheRef.current = parsed
+        }
+        localStorage.removeItem(`theme_cache_${id}`)
+      } catch {
+        themeCacheRef.current = {}
+      }
+
       const savedPreset = localStorage.getItem(`theme_preset_${id}`)
       if (savedPreset) {
         const preset = getThemeById(savedPreset)
         setActiveTheme(preset)
-        history.resetTo(applyPresetToSlides(r.data.slides, preset))
+        // Prefer the cached rendering for the saved preset if we have one —
+        // the slides on disk are already in the saved preset's palette, but
+        // the cache may carry additional per-theme decoration (gradient
+        // backgrounds dropped on theme switch) that we want to preserve.
+        const cached = themeCacheRef.current[preset.id]
+        history.resetTo(cached ?? applyPresetToSlides(r.data.slides, preset, preset))
         setDbTheme(presetToTheme(preset))
       } else if (r.data.theme_id) {
         // Fetch the actual DB theme for canvas/fallback rendering.
@@ -231,6 +374,113 @@ export function PresentationPage() {
       }
     })
   }, [id])
+
+  // ── Theme pre-warm ───────────────────────────────────────────────────────
+  // Generate background images for a small set of popular themes upfront so
+  // that when the user switches between them, the cache hits and no extra
+  // /images/generate calls are needed. One image per theme is reused across
+  // every slide in that theme — visually less varied than per-slide images
+  // but stays cleanly inside the 20/hour image-gen rate limit (this spends
+  // 5 calls total).
+  //
+  // Runs in the background after the presentation loads. Each pre-warm step
+  // also runs the algorithmic restyle so the cached entry is ready for an
+  // instant `setSlides()` swap on theme switch.
+  const prewarmRanRef = useRef(false)
+  useEffect(() => {
+    if (!presentation || slidesRef.current.length === 0) return
+    if (prewarmRanRef.current) return
+    prewarmRanRef.current = true
+
+    const PREWARM_IDS = ['vortex', 'pearl', 'gamma-midnight', 'gamma-sunset', 'gamma-aurora']
+    let cancelled = false
+
+    const bgPrompt = (theme: ThemePreset, isTitle: boolean) => {
+      const subject = isTitle
+        ? 'sweeping wave-like ridges and flowing dune textures, dramatic side-lit topography, deep shadows and bright highlights along the crests'
+        : 'subtle organic ridges and softly draped textured surface, low-key atmospheric lighting'
+      return [
+        `Cinematic full-bleed background photograph for a ${theme.name}-themed presentation slide.`,
+        `Subject: ${subject}.`,
+        `Dominant palette: deep ${theme.colors.background} tones with ${theme.colors.accent} highlights catching the light.`,
+        `Mood: premium editorial magazine aesthetic, moody and atmospheric, high contrast, rich texture, professional studio photography.`,
+        `Composition: ample negative space for headline overlay, off-center focal point, 16:9 aspect ratio.`,
+        `No text, no logos, no people.`,
+      ].join(' ')
+    }
+
+    ;(async () => {
+      // Give the editor a moment to settle before we start hammering the API.
+      await new Promise((r) => setTimeout(r, 2000))
+
+      for (const themeId of PREWARM_IDS) {
+        if (cancelled) return
+        // Skip the active theme (already on screen) and anything we've cached.
+        if (themeId === activeThemeRef.current.id) continue
+        if (themeCacheRef.current[themeId]) continue
+
+        const targetTheme = getThemeById(themeId)
+        const restyled = applyPresetToSlides(
+          slidesRef.current,
+          targetTheme,
+          activeThemeRef.current,
+        )
+
+        // Two images per theme: A for first/last (title-style bookends),
+        // B for middle slides (content-style). Falls through if either
+        // call hits the rate limiter — partial cache is still useful.
+        let imageA: string | null = null
+        let imageB: string | null = null
+        try {
+          const { data: dataA } = await imagesApi.generate(bgPrompt(targetTheme, true))
+          imageA = imagesApi.resolveUrl(dataA.url)
+        } catch {
+          // Rate limit / network — stop pre-warming; later themes can be
+          // generated on-demand if the user picks them.
+          return
+        }
+        if (cancelled) return
+
+        if (restyled.length > 2) {
+          try {
+            const { data: dataB } = await imagesApi.generate(bgPrompt(targetTheme, false))
+            imageB = imagesApi.resolveUrl(dataB.url)
+          } catch {
+            // If B fails, we still cache with A reused everywhere — better
+            // than dropping the whole theme.
+            imageB = imageA
+          }
+        }
+        if (cancelled) return
+
+        const lastIndex = restyled.length - 1
+        const withBg = restyled.map((s, i) => {
+          const url =
+            i === 0 || i === lastIndex
+              ? imageA
+              : (imageB ?? imageA)
+          if (!url) return s
+          const bgBlock: Block = {
+            id: `ai-bg-${targetTheme.id}-${i}-${Date.now()}`,
+            type: 'image',
+            content: url,
+            position: { x: 0, y: 0, w: 1280, h: 720 },
+            styling: {},
+          }
+          return { ...s, blocks: [bgBlock, ...s.blocks] }
+        })
+
+        themeCacheRef.current[targetTheme.id] = withBg
+        if (id) {
+          try {
+            localStorage.setItem(`theme_cache_${id}_v2`, JSON.stringify(themeCacheRef.current))
+          } catch { /* quota exceeded — best effort */ }
+        }
+      }
+    })()
+
+    return () => { cancelled = true }
+  }, [presentation, id])
 
   // Dynamic canvas scale
   useEffect(() => {
@@ -292,14 +542,56 @@ export function PresentationPage() {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current) }
   }, [slides, layouts, id])
 
+  // Manual save — cancels the pending debounce and writes immediately.
+  const saveNow = useCallback(async () => {
+    if (!id) return
+    if (debounceRef.current) { clearTimeout(debounceRef.current); debounceRef.current = null }
+    setSaveStatus('saving')
+    try {
+      await presentationsApi.update(id, { slides, layouts })
+      setSaveStatus('saved')
+      setTimeout(() => setSaveStatus('idle'), 2000)
+    } catch {
+      setSaveStatus('idle')
+    }
+  }, [id, slides, layouts])
+
+  // Ctrl/Cmd+S → manual save.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
+        const t = e.target as HTMLElement | null
+        // Don't hijack save inside editable elements — let the browser/editor
+        // handle it. But still trigger our save afterwards.
+        e.preventDefault()
+        saveNow()
+        // Touch t to satisfy lint without changing behavior.
+        void t
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [saveNow])
+
   // ── Block interactions ──────────────────────────────────────────────────────
+  // Gamma-style: single click on an UNSELECTED block selects it; clicking
+  // an ALREADY-selected block enters in-place edit mode. Double-click also
+  // enters edit mode immediately. The right-side property panel still
+  // works but inline editing is the primary path.
   const handleBlockClick = useCallback((blockId: string) => {
     if (!blockId) { setSelectedBlockId(null); setEditingBlockId(null); return }
-    setSelectedBlockId(blockId)
-    setEditingBlockId(null)
+    setSelectedBlockId((prevSel) => {
+      if (prevSel === blockId) {
+        setEditingBlockId(blockId)  // second click on same block → edit
+      } else {
+        setEditingBlockId(null)
+      }
+      return blockId
+    })
   }, [])
 
   const handleBlockDoubleClick = useCallback((blockId: string) => {
+    setSelectedBlockId(blockId)
     setEditingBlockId(blockId)
   }, [])
 
@@ -343,25 +635,184 @@ export function PresentationPage() {
   }
 
   // ── Theme ───────────────────────────────────────────────────────────────────
-  const handleApplyTheme = useCallback((theme: ThemePreset) => {
-    const updated = applyPresetToSlides(slidesRef.current, theme)
-    setSlides(updated)
-    setActiveTheme(theme)
-    setDbTheme(presetToTheme(theme))
-    setThemeOpen(false)
-    if (id) {
-      // Persist preset name in localStorage (the DB theme_id is a UUID FK,
-      // not a preset name, so we can't save 'vortex' there directly).
-      localStorage.setItem(`theme_preset_${id}`, theme.id)
-      // Save slides immediately — don't rely on the debounce in case the user
-      // closes the tab before it fires.
-      presentationsApi.update(id, { slides: updated })
+  // Per-deck cache of slides-by-theme. When the user switches themes we stash
+  // the current rendering under the *outgoing* theme id, then check if we
+  // already have a rendering for the *incoming* theme. Cache hit → instant
+  // restore; cache miss → algorithmic restyle now + Gemini refinement in the
+  // background. Once Gemini finishes we replace and persist the cache, so
+  // the next visit to that theme is also instant.
+  const themeCacheRef = useRef<Record<string, Slide[]>>({})
+  const themeAiSeqRef = useRef(0)  // cancels stale in-flight AI restyles
+  const [aiRestyling, setAiRestyling] = useState(false)
+  // Progressive reveal state for theme switches. Non-null while bg images are
+  // being generated; drives the small loader badge above the canvas and the
+  // entrance animation key on the canvas wrapper.
+  const [themeSwitchProgress, setThemeSwitchProgress] = useState<{
+    ready: number
+    total: number
+    themeId: string
+  } | null>(null)
+
+  const persistThemeCache = useCallback(() => {
+    if (!id) return
+    try {
+      localStorage.setItem(`theme_cache_${id}_v2`, JSON.stringify(themeCacheRef.current))
+    } catch {
+      /* quota exceeded — cache is best-effort */
     }
   }, [id])
 
+  const handleApplyTheme = useCallback((theme: ThemePreset) => {
+    if (theme.id === activeTheme.id) {
+      setThemeOpen(false)
+      return
+    }
+
+    // Snapshot the outgoing theme so we can restore it later.
+    themeCacheRef.current[activeTheme.id] = slidesRef.current
+
+    const cached = themeCacheRef.current[theme.id]
+    const algorithmic = applyPresetToSlides(slidesRef.current, theme, activeTheme)
+
+    // ── Cache hit: instant swap ───────────────────────────────────────────
+    if (cached) {
+      setSlides(cached)
+      setActiveTheme(theme)
+      setDbTheme(presetToTheme(theme))
+      setThemeOpen(false)
+      if (id) {
+        localStorage.setItem(`theme_preset_${id}`, theme.id)
+        persistThemeCache()
+        presentationsApi.update(id, { slides: cached })
+      }
+      return
+    }
+
+    // ── Cache miss: progressive reveal (Gamma-style) ──────────────────────
+    // The user explicitly does NOT want to see the flat-gradient intermediate
+    // state, so we DON'T call setSlides(algorithmic) up front. Instead we
+    // keep the OLD theme's slides on screen and replace them one-by-one as
+    // each new bg image arrives. The first slide that finishes also switches
+    // the active theme so the canvas chrome (toolbar bg, etc.) matches.
+    //
+    // The per-slide AI text restyle (/generate/slide/rewrite, 60/hour) is
+    // intentionally not called — the algorithmic pass already covers color
+    // remapping and role styling, and the marginal Gemini icing isn't worth
+    // burning quota.
+
+    setThemeOpen(false)
+    const seq = ++themeAiSeqRef.current
+    const total = algorithmic.length
+    setThemeSwitchProgress({ ready: 0, total, themeId: theme.id })
+    setAiRestyling(true)
+
+    if (id) localStorage.setItem(`theme_preset_${id}`, theme.id)
+
+    // Working copy starts as the OUTGOING theme's slides so the user keeps
+    // seeing the previous render until each slot's new bg image is ready.
+    const partial: Slide[] = [...slidesRef.current]
+    let readyCount = 0
+
+    // Two prompts per theme — one for "title-style" slides (the first and
+    // last, which read as bookends), one for "content-style" slides (every
+    // middle slide). This keeps total API spend to 2 calls per switch (or 1
+    // on tiny decks) and gives the deck a coherent bookended look: the
+    // opening and closing share the same dramatic backdrop, while the body
+    // shares a calmer, subtler one.
+    const bgPrompt = (isTitle: boolean) => {
+      const subject = isTitle
+        ? 'sweeping wave-like ridges and flowing dune textures, dramatic side-lit topography, deep shadows and bright highlights along the crests'
+        : 'subtle organic ridges and softly draped textured surface, low-key atmospheric lighting'
+      return [
+        `Cinematic full-bleed background photograph for a ${theme.name}-themed presentation slide.`,
+        `Subject: ${subject}.`,
+        `Dominant palette: deep ${theme.colors.background} tones with ${theme.colors.accent} highlights catching the light.`,
+        `Mood: premium editorial magazine aesthetic, moody and atmospheric, high contrast, rich texture, professional studio photography.`,
+        `Composition: ample negative space for headline overlay, off-center focal point, 16:9 aspect ratio.`,
+        `No text, no logos, no people.`,
+      ].join(' ')
+    }
+
+    const tryGenerate = async (isTitle: boolean): Promise<string | null> => {
+      try {
+        const { data } = await imagesApi.generate(bgPrompt(isTitle))
+        return imagesApi.resolveUrl(data.url)
+      } catch {
+        return null
+      }
+    }
+
+    const applySlide = (i: number, bgUrl: string | null) => {
+      const newSlide: Slide = bgUrl
+        ? {
+            ...algorithmic[i],
+            blocks: [
+              {
+                id: `ai-bg-${theme.id}-${i}-${Date.now()}`,
+                type: 'image',
+                content: bgUrl,
+                position: { x: 0, y: 0, w: 1280, h: 720 },
+                styling: {},
+              } as Block,
+              ...algorithmic[i].blocks,
+            ],
+          }
+        : algorithmic[i]
+      partial[i] = newSlide
+      readyCount++
+      if (readyCount === 1) {
+        setActiveTheme(theme)
+        setDbTheme(presetToTheme(theme))
+      }
+      setSlides([...partial])
+      setThemeSwitchProgress({ ready: readyCount, total, themeId: theme.id })
+    }
+
+    // Sequential progressive reveal:
+    //   1. Generate image A (title-style)  → reveal slide 0.
+    //   2. Generate image B (content-style) → reveal middle slides one by
+    //      one with a small stagger so the user sees them populating.
+    //   3. Reuse image A (no API call)     → reveal the last slide.
+    void (async () => {
+      const lastIndex = total - 1
+
+      // Step 1 — title-style image for slide 0.
+      const imageA = await tryGenerate(true)
+      if (seq !== themeAiSeqRef.current) return
+      applySlide(0, imageA)
+
+      // Step 2 — content-style image, applied to every middle slide.
+      if (total > 2) {
+        const imageB = await tryGenerate(false)
+        if (seq !== themeAiSeqRef.current) return
+        for (let i = 1; i < lastIndex; i++) {
+          if (seq !== themeAiSeqRef.current) return
+          applySlide(i, imageB)
+          // Small stagger between middle slides so the reveal still feels
+          // progressive even though we already have the image.
+          await new Promise((r) => setTimeout(r, 140))
+        }
+      }
+
+      // Step 3 — reuse image A on the last slide. No API call.
+      if (total > 1 && seq === themeAiSeqRef.current) {
+        applySlide(lastIndex, imageA)
+      }
+    })().finally(() => {
+      if (seq !== themeAiSeqRef.current) return  // user switched again
+      themeCacheRef.current[theme.id] = partial
+      persistThemeCache()
+      if (id && activeThemeRef.current.id === theme.id) {
+        presentationsApi.update(id, { slides: partial })
+      }
+      setAiRestyling(false)
+      setThemeSwitchProgress(null)
+    })
+  }, [id, activeTheme, persistThemeCache])
+
   // ── Slide management ────────────────────────────────────────────────────────
   const addSlideOfKind = (kind: SlideTemplateKind) => {
-    const newSlide = makeSlideOfKind(kind, slides.length + 1, activeTheme)
+    const newSlide = makeSlideOfKind(kind, slides.length + 1, activeTheme, slides[activeSlide], slides)
     setSlides((prev) => [...prev, newSlide])
     setActiveSlide(slides.length)
     setSelectedBlockId(null)
@@ -373,7 +824,7 @@ export function PresentationPage() {
   // to the end when you're working in the middle of a deck.
   const insertSlideAfterCurrent = (kind: SlideTemplateKind) => {
     const insertAt = activeSlide + 1
-    const newSlide = makeSlideOfKind(kind, insertAt + 1, activeTheme)
+    const newSlide = makeSlideOfKind(kind, insertAt + 1, activeTheme, slides[activeSlide], slides)
     setSlides((prev) => {
       const next = [...prev.slice(0, insertAt), newSlide, ...prev.slice(insertAt)]
       return next.map((s, i) => ({ ...s, order: i + 1 }))
@@ -386,7 +837,7 @@ export function PresentationPage() {
   const applyLayoutToCurrentSlide = (kind: SlideTemplateKind) => {
     setSlides((prev) =>
       prev.map((s, i) => i !== activeSlide ? s : {
-        ...makeSlideOfKind(kind, s.order, activeTheme),
+        ...makeSlideOfKind(kind, s.order, activeTheme, s, prev),
         order: s.order,
       })
     )
@@ -749,7 +1200,7 @@ export function PresentationPage() {
         display: 'flex', alignItems: 'center', gap: 10, padding: '0 18px',
       }}>
         <button
-          onClick={() => navigate('/dashboard')}
+          onClick={() => navigate('/decks')}
           style={{
             background: 'rgba(255,255,255,0.05)', border: 'none', cursor: 'pointer',
             color: 'rgba(255,255,255,0.65)', borderRadius: 10, lineHeight: 1,
@@ -788,7 +1239,69 @@ export function PresentationPage() {
               {saveStatus === 'saving' ? '— Saving…' : '— Saved'}
             </span>
           )}
+          {aiRestyling && (
+            <span style={{
+              fontSize: 10, fontWeight: 500, letterSpacing: '0.16em', textTransform: 'uppercase',
+              fontFamily: 'JetBrains Mono, monospace',
+              color: '#A78BFA',
+              marginTop: 1,
+            }}>
+              — AI restyling…
+            </span>
+          )}
         </div>
+
+        {/* Save — explicit manual save, complements the 500ms debounced auto-save */}
+        <button
+          onClick={saveNow}
+          disabled={saveStatus === 'saving'}
+          title="Save now (Ctrl+S)"
+          style={{
+            background: 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.10)',
+            borderRadius: 999,
+            color: '#fff',
+            height: 36,
+            padding: '0 16px',
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: saveStatus === 'saving' ? 'default' : 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            whiteSpace: 'nowrap',
+            letterSpacing: -0.1,
+            transition: 'all 200ms cubic-bezier(0.22, 1, 0.36, 1)',
+            opacity: saveStatus === 'saving' ? 0.65 : 1,
+          }}
+          onMouseEnter={e => {
+            if (saveStatus !== 'saving') {
+              (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.14)'
+            }
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.08)'
+          }}
+        >
+          {saveStatus === 'saving' ? (
+            <>
+              <span
+                style={{
+                  display: 'inline-block',
+                  width: 11,
+                  height: 11,
+                  border: '2px solid rgba(255,255,255,0.25)',
+                  borderTopColor: '#fff',
+                  borderRadius: '50%',
+                  animation: 'spin 0.8s linear infinite',
+                }}
+              />
+              Saving…
+            </>
+          ) : (
+            <>💾 Save</>
+          )}
+        </button>
 
         {/* Undo / Redo — pinned in the top bar so they never overlap the canvas toolbar */}
         <TopBarIconBtn
@@ -1020,13 +1533,14 @@ export function PresentationPage() {
                 }}
               >
                 <button
+                  onMouseDown={() => { setActiveSlide(i); setSelectedBlockId(null); setEditingBlockId(null) }}
                   onClick={() => { setActiveSlide(i); setSelectedBlockId(null); setEditingBlockId(null) }}
                   onContextMenu={(e) => {
                     e.preventDefault()
                     e.stopPropagation()
                     setCtxMenu({ index: i, x: e.clientX, y: e.clientY })
                   }}
-                  style={{ width: '100%', background: 'none', border: 'none', padding: 0, cursor: 'grab' }}
+                  style={{ width: '100%', background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}
                 >
                   <div style={{
                     border: `2px solid ${i === activeSlide ? '#6366f1' : 'rgba(255,255,255,0.08)'}`,
@@ -1117,19 +1631,88 @@ export function PresentationPage() {
           </div>
 
           {currentSlide && (
-            <SlidePreview
-              slide={currentSlide}
-              theme={themeObj}
-              scale={canvasScale}
-              selectedBlockId={selectedBlockId}
-              editingBlockId={editingBlockId}
-              onBlockClick={handleBlockClick}
-              onBlockDoubleClick={handleBlockDoubleClick}
-              onBlockContentChange={handleBlockContentChange}
-              editable
-              onBlockPositionChange={handleBlockPositionChange}
-            />
+            // Keying by slide.id + activeTheme.id + first-block-id triggers a
+            // remount whenever the slide swaps to the new theme during a
+            // progressive reveal — the .wac-slide-enter animation then plays.
+            <div
+              key={`${(currentSlide as any).id ?? activeSlide}-${activeTheme.id}-${currentSlide.blocks[0]?.id ?? ''}`}
+              className="wac-slide-enter"
+            >
+              <SlidePreview
+                slide={currentSlide}
+                theme={themeObj}
+                scale={canvasScale}
+                selectedBlockId={selectedBlockId}
+                editingBlockId={editingBlockId}
+                onBlockClick={handleBlockClick}
+                onBlockDoubleClick={handleBlockDoubleClick}
+                onBlockContentChange={handleBlockContentChange}
+                editable
+                onBlockPositionChange={handleBlockPositionChange}
+                totalSlides={slides.length}
+                deckTitle={presentation?.title}
+              />
+            </div>
           )}
+
+          {/* Theme-switch progress badge — only visible while bg images are
+              being generated. Sits in the top-left of the canvas so it
+              doesn't overlap the right-side secondary toolbar. */}
+          {themeSwitchProgress && (
+            <div
+              style={{
+                position: 'absolute', top: 14, left: 24, zIndex: 40,
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '8px 12px', borderRadius: 999,
+                background: 'rgba(0,0,0,0.78)',
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
+                pointerEvents: 'none',
+              }}
+            >
+              <Loader2 size={13} className="animate-spin" color="#fff" />
+              <span style={{
+                color: '#fff', fontSize: 12, fontWeight: 500,
+                fontFamily: 'Inter, sans-serif',
+                fontVariantNumeric: 'tabular-nums',
+              }}>
+                Generating theme · {themeSwitchProgress.ready} / {themeSwitchProgress.total}
+              </span>
+            </div>
+          )}
+
+          {/* Gamma-style staggered block entrance. The wrapper key change
+              remounts the slide; each direct child of the canvas (bg image,
+              title, body, panels, etc.) then fades up in sequence, giving
+              the deck a "composing itself" feel instead of a single flat
+              fade-in. */}
+          <style>{`
+            @keyframes wac-block-enter {
+              from { opacity: 0; transform: translateY(14px); filter: blur(2px); }
+              to   { opacity: 1; transform: translateY(0);    filter: blur(0);   }
+            }
+            .wac-slide-enter > div > * {
+              animation: wac-block-enter 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
+            }
+            /* Stagger the first ~16 children. Anything beyond falls back to
+               the default 0ms delay — uncommon for a single slide anyway. */
+            .wac-slide-enter > div > *:nth-child(1)  { animation-delay: 0ms;    }
+            .wac-slide-enter > div > *:nth-child(2)  { animation-delay: 90ms;   }
+            .wac-slide-enter > div > *:nth-child(3)  { animation-delay: 180ms;  }
+            .wac-slide-enter > div > *:nth-child(4)  { animation-delay: 270ms;  }
+            .wac-slide-enter > div > *:nth-child(5)  { animation-delay: 360ms;  }
+            .wac-slide-enter > div > *:nth-child(6)  { animation-delay: 450ms;  }
+            .wac-slide-enter > div > *:nth-child(7)  { animation-delay: 540ms;  }
+            .wac-slide-enter > div > *:nth-child(8)  { animation-delay: 630ms;  }
+            .wac-slide-enter > div > *:nth-child(9)  { animation-delay: 720ms;  }
+            .wac-slide-enter > div > *:nth-child(10) { animation-delay: 810ms;  }
+            .wac-slide-enter > div > *:nth-child(11) { animation-delay: 900ms;  }
+            .wac-slide-enter > div > *:nth-child(12) { animation-delay: 990ms;  }
+            .wac-slide-enter > div > *:nth-child(13) { animation-delay: 1080ms; }
+            .wac-slide-enter > div > *:nth-child(14) { animation-delay: 1170ms; }
+            .wac-slide-enter > div > *:nth-child(15) { animation-delay: 1260ms; }
+            .wac-slide-enter > div > *:nth-child(16) { animation-delay: 1350ms; }
+          `}</style>
 
           <div style={{
             position: 'absolute', bottom: 14, left: '50%', transform: 'translateX(-50%)',
